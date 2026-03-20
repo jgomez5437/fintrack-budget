@@ -1,12 +1,12 @@
 import { C } from "../constants";
 
-export default function DeleteTransactionModal({
-  transaction,
+export default function DeleteConfirmModal({
+  title,
+  description,
+  confirmLabel,
   onCancel,
   onConfirm,
 }) {
-  if (!transaction) return null;
-
   return (
     <div
       style={{
@@ -39,7 +39,7 @@ export default function DeleteTransactionModal({
             textTransform: "uppercase",
           }}
         >
-          Delete Transaction
+          Confirm Deletion
         </div>
         <h2
           style={{
@@ -49,11 +49,10 @@ export default function DeleteTransactionModal({
             lineHeight: 1.15,
           }}
         >
-          Remove "{transaction.name}"?
+          {title}
         </h2>
         <p style={{ margin: "14px 0 0", color: C.textMid, lineHeight: 1.7 }}>
-          This will permanently delete the transaction amount of $
-          {transaction.amount} from this month&apos;s activity.
+          {description}
         </p>
 
         <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
@@ -70,7 +69,7 @@ export default function DeleteTransactionModal({
               cursor: "pointer",
             }}
           >
-            Delete transaction
+            {confirmLabel}
           </button>
 
           <button
@@ -86,7 +85,7 @@ export default function DeleteTransactionModal({
               cursor: "pointer",
             }}
           >
-            Keep transaction
+            Cancel
           </button>
         </div>
       </div>

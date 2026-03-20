@@ -22,7 +22,8 @@ import BudgetTab from "./app/components/BudgetTab";
 import TransactionsTab from "./app/components/TransactionsTab";
 import ImportReviewModal from "./app/components/ImportReviewModal";
 import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
-import DeleteTransactionModal from "./app/components/DeleteTransactionModal";
+import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
+import AddCategoryModal from "./app/components/AddCategoryModal";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -85,7 +86,8 @@ export default function BudgetApp() {
   const [nextMonthPrompt, setNextMonthPrompt] = useState(null);
   const [isCreatingNextMonth, setIsCreatingNextMonth] = useState(false);
   const [canGoPrev, setCanGoPrev] = useState(false);
-  const [pendingDeleteTransaction, setPendingDeleteTransaction] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
@@ -316,13 +318,17 @@ export default function BudgetApp() {
       ],
     });
     setNewCat({ name: "", amount: "" });
+    setShowAddCategoryModal(false);
   };
 
-  const deleteCategory = (id) => {
-    update({
-      ...data,
-      categories: data.categories.filter((category) => category.id !== id),
-      transactions: transactions.filter((transaction) => transaction.categoryId !== id),
+  const deleteCategory = (categoryToDelete) => {
+    setPendingDelete({
+      type: "category",
+      id: categoryToDelete.id,
+      title: `Delete "${categoryToDelete.name}"?`,
+      description:
+        "This will remove the category and delete all transactions assigned to it.",
+      confirmLabel: "Delete category",
     });
   };
 
@@ -469,19 +475,38 @@ export default function BudgetApp() {
   };
 
   const deleteTransaction = (transactionToDelete) => {
-    setPendingDeleteTransaction(transactionToDelete);
+    setPendingDelete({
+      type: "transaction",
+      id: transactionToDelete.id,
+      title: `Remove "${transactionToDelete.name}"?`,
+      description: `This will permanently delete the transaction amount of $${transactionToDelete.amount} from this month's activity.`,
+      confirmLabel: "Delete transaction",
+    });
   };
 
-  const confirmDeleteTransaction = () => {
-    if (!pendingDeleteTransaction) return;
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
 
-    update({
-      ...data,
-      transactions: transactions.filter(
-        (transaction) => transaction.id !== pendingDeleteTransaction.id,
-      ),
-    });
-    setPendingDeleteTransaction(null);
+    if (pendingDelete.type === "transaction") {
+      update({
+        ...data,
+        transactions: transactions.filter(
+          (transaction) => transaction.id !== pendingDelete.id,
+        ),
+      });
+    }
+
+    if (pendingDelete.type === "category") {
+      update({
+        ...data,
+        categories: data.categories.filter((category) => category.id !== pendingDelete.id),
+        transactions: transactions.filter(
+          (transaction) => transaction.categoryId !== pendingDelete.id,
+        ),
+      });
+    }
+
+    setPendingDelete(null);
   };
 
   const duplicateTransaction = (transaction) => {
@@ -757,11 +782,25 @@ export default function BudgetApp() {
         />
       )}
 
-      {pendingDeleteTransaction && (
-        <DeleteTransactionModal
-          transaction={pendingDeleteTransaction}
-          onConfirm={confirmDeleteTransaction}
-          onCancel={() => setPendingDeleteTransaction(null)}
+      {pendingDelete && (
+        <DeleteConfirmModal
+          title={pendingDelete.title}
+          description={pendingDelete.description}
+          confirmLabel={pendingDelete.confirmLabel}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {showAddCategoryModal && (
+        <AddCategoryModal
+          newCat={newCat}
+          onCategoryChange={setNewCat}
+          onConfirm={addCategory}
+          onCancel={() => {
+            setShowAddCategoryModal(false);
+            setNewCat({ name: "", amount: "" });
+          }}
         />
       )}
 
@@ -807,7 +846,6 @@ export default function BudgetApp() {
             inlineCatId={inlineCatId}
             inlineTx={inlineTx}
             inlineAutocomplete={inlineAutocomplete}
-            newCat={newCat}
             quickTx={quickTx}
             quickAutocomplete={quickAutocomplete}
             showQuickAdd={showQuickAdd}
@@ -826,8 +864,7 @@ export default function BudgetApp() {
               setInlineTx((current) => ({ ...current, amount: value }))
             }
             onSubmitInline={submitInline}
-            onNewCategoryChange={setNewCat}
-            onAddCategory={addCategory}
+            onOpenAddCategory={() => setShowAddCategoryModal(true)}
             quickNameRef={quickNameRef}
             onOpenQuickAdd={openQuickAdd}
             onCloseQuickAdd={resetQuickAdd}
