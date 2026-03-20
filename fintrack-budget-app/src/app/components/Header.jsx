@@ -120,6 +120,7 @@ export default function Header({
         {userEmail && (
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <div
+              className="desktop-email-pill"
               style={{
                 maxWidth: "220px",
                 padding: "8px 12px",

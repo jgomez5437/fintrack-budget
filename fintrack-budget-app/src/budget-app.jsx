@@ -21,6 +21,27 @@ import TabSwitcher from "./app/components/TabSwitcher";
 import BudgetTab from "./app/components/BudgetTab";
 import TransactionsTab from "./app/components/TransactionsTab";
 import ImportReviewModal from "./app/components/ImportReviewModal";
+import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
+
+function getNextMonthTarget(month, year) {
+  if (month === 11) {
+    return { month: 0, year: year + 1 };
+  }
+
+  return { month: month + 1, year };
+}
+
+function cloneBudgetSetup(sourceData) {
+  return {
+    income: sourceData.income ?? "",
+    categories: (sourceData.categories || []).map((category) => ({
+      id: category.id,
+      name: category.name,
+      amount: category.amount,
+    })),
+    transactions: [],
+  };
+}
 
 export default function BudgetApp() {
   const storage = getStorage();
@@ -52,6 +73,8 @@ export default function BudgetApp() {
   const [importRows, setImportRows] = useState(null);
   const [importError, setImportError] = useState("");
   const [isImportDragActive, setIsImportDragActive] = useState(false);
+  const [nextMonthPrompt, setNextMonthPrompt] = useState(null);
+  const [isCreatingNextMonth, setIsCreatingNextMonth] = useState(false);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
@@ -197,9 +220,17 @@ export default function BudgetApp() {
     setAuthError("");
 
     try {
-      await action(credentials);
+      const result = await action(credentials);
+      const nextSession = result?.session ?? (await getCurrentSession());
+
+      setSession(nextSession);
+
+      if (!nextSession) {
+        setAuthError("Account created. Sign in with your email and password to continue.");
+      }
     } catch (error) {
       setAuthError(error.message || "Authentication failed.");
+    } finally {
       setAuthSubmitting(false);
     }
   }, []);
@@ -293,13 +324,53 @@ export default function BudgetApp() {
   };
 
   const nextMonth = () => {
-    if (month === 11) {
-      setMonth(0);
-      setYear((current) => current + 1);
-      return;
+    const target = getNextMonthTarget(month, year);
+    const budgetKey = `budget-${target.month}-${target.year}`;
+
+    async function prepareNextMonth() {
+      try {
+        const existing = await storage.get(budgetKey);
+
+        if (existing) {
+          setMonth(target.month);
+          setYear(target.year);
+          return;
+        }
+
+        setNextMonthPrompt(target);
+      } catch {
+        setNextMonthPrompt(target);
+      }
     }
-    setMonth((current) => current + 1);
+
+    prepareNextMonth();
   };
+
+  const createNextMonth = useCallback(
+    async (shouldTransfer) => {
+      if (!nextMonthPrompt) return;
+
+      setIsCreatingNextMonth(true);
+
+      try {
+        const nextMonthData = shouldTransfer ? cloneBudgetSetup(data) : defaultData();
+
+        await storage.set(
+          `budget-${nextMonthPrompt.month}-${nextMonthPrompt.year}`,
+          JSON.stringify(nextMonthData),
+        );
+
+        setMonth(nextMonthPrompt.month);
+        setYear(nextMonthPrompt.year);
+        setNextMonthPrompt(null);
+      } catch {
+        setAuthError("Unable to create the next month right now.");
+      } finally {
+        setIsCreatingNextMonth(false);
+      }
+    },
+    [data, nextMonthPrompt, storage],
+  );
 
   const openTxForm = (prefill = {}) => {
     setNewTx({
@@ -622,6 +693,17 @@ export default function BudgetApp() {
       }}
     >
       <GlobalStyles />
+
+      {nextMonthPrompt && (
+        <NextMonthPromptModal
+          month={nextMonthPrompt.month}
+          year={nextMonthPrompt.year}
+          isCreating={isCreatingNextMonth}
+          onTransfer={() => createNextMonth(true)}
+          onCreateBlank={() => createNextMonth(false)}
+          onCancel={() => setNextMonthPrompt(null)}
+        />
+      )}
 
       <Header
         month={month}

@@ -30,6 +30,7 @@ export default function GlobalStyles() {
       .import-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.textMid} !important; }
       .import-row:hover { background: ${C.blueLight} !important; }
       .import-table-container { overflow-x: auto; }
+      .desktop-email-pill { display: block; }
       @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
       .fade-up { animation: fadeUp 0.3s ease both; }
@@ -37,6 +38,7 @@ export default function GlobalStyles() {
       .bar-fill { transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
       .mini-bar-fill { transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
       @media (max-width: 768px) {
+        .desktop-email-pill { display: none; }
         .import-table-container { overflow-x: scroll; -webkit-overflow-scrolling: touch; }
         .import-table-row { min-width: 600px; }
       }
