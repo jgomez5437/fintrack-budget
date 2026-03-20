@@ -4,7 +4,16 @@ import { buildBudgetSummary, getCategoryById } from "./app/utils/budget";
 import { formatCurrency, todayLabel } from "./app/utils/formatters";
 import { parseImportFile } from "./app/services/importTransactions";
 import { getStorage } from "./app/services/storage";
+import {
+  getCurrentSession,
+  isSupabaseConfigured,
+  onAuthStateChange,
+  signInWithEmail,
+  signOutUser,
+  signUpWithEmail,
+} from "./app/services/supabase";
 import GlobalStyles from "./app/components/GlobalStyles";
+import AuthScreen from "./app/components/AuthScreen";
 import Header from "./app/components/Header";
 import SummaryCards from "./app/components/SummaryCards";
 import SpendProgress from "./app/components/SpendProgress";
@@ -16,6 +25,11 @@ import ImportReviewModal from "./app/components/ImportReviewModal";
 export default function BudgetApp() {
   const storage = getStorage();
   const now = new Date();
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [signOutPending, setSignOutPending] = useState(false);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [data, setData] = useState(() => defaultData());
@@ -46,6 +60,50 @@ export default function BudgetApp() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadSession() {
+      if (!isSupabaseConfigured()) {
+        if (isMounted) setAuthLoading(false);
+        return;
+      }
+
+      try {
+        const nextSession = await getCurrentSession();
+        if (isMounted) {
+          setSession(nextSession);
+          setAuthError("");
+        }
+      } catch (error) {
+        if (isMounted) {
+          setAuthError(error.message || "Unable to start authentication.");
+        }
+      } finally {
+        if (isMounted) setAuthLoading(false);
+      }
+    }
+
+    loadSession();
+
+    const { data: listener } = onAuthStateChange((_event, nextSession) => {
+      if (!isMounted) return;
+
+      setSession(nextSession);
+      setAuthLoading(false);
+      setAuthSubmitting(false);
+      setSignOutPending(false);
+      setAuthError("");
+    });
+
+    return () => {
+      isMounted = false;
+      listener?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authLoading || !session) return;
+
     async function loadBudget() {
       try {
         const result = await storage.get(`budget-${month}-${year}`);
@@ -60,9 +118,11 @@ export default function BudgetApp() {
     }
 
     loadBudget();
-  }, [month, year, storage]);
+  }, [authLoading, month, year, session, storage]);
 
   useEffect(() => {
+    if (authLoading || !session) return;
+
     async function loadPreference() {
       try {
         const result = await storage.get("fintrack-last-cat");
@@ -73,15 +133,12 @@ export default function BudgetApp() {
     }
 
     loadPreference();
-  }, [storage]);
+  }, [authLoading, session, storage]);
 
   const persist = useCallback(
     async (nextData) => {
       try {
-        await storage.set(
-          `budget-${month}-${year}`,
-          JSON.stringify(nextData),
-        );
+        await storage.set(`budget-${month}-${year}`, JSON.stringify(nextData));
       } catch {
         // Ignore persistence failures to keep the UI responsive.
       }
@@ -123,14 +180,55 @@ export default function BudgetApp() {
     [pastNames],
   );
 
-  const rememberCategory = useCallback((id) => {
-    setLastCategoryId(id);
+  const rememberCategory = useCallback(
+    (id) => {
+      setLastCategoryId(id);
+      try {
+        storage.set("fintrack-last-cat", id);
+      } catch {
+        // Ignore preference write failures.
+      }
+    },
+    [storage],
+  );
+
+  const handleAuthAction = useCallback(async (action, credentials) => {
+    setAuthSubmitting(true);
+    setAuthError("");
+
     try {
-      storage.set("fintrack-last-cat", id);
-    } catch {
-      // Ignore preference write failures.
+      await action(credentials);
+    } catch (error) {
+      setAuthError(error.message || "Authentication failed.");
+      setAuthSubmitting(false);
     }
-  }, [storage]);
+  }, []);
+
+  const handleSignIn = useCallback(
+    async (credentials) => handleAuthAction(signInWithEmail, credentials),
+    [handleAuthAction],
+  );
+
+  const handleSignUp = useCallback(
+    async (credentials) => handleAuthAction(signUpWithEmail, credentials),
+    [handleAuthAction],
+  );
+
+  const handleSignOut = useCallback(async () => {
+    setSignOutPending(true);
+    setAuthError("");
+
+    try {
+      await signOutUser();
+      setData(defaultData());
+      setLastCategoryId("");
+      setImportRows(null);
+      setImportError("");
+    } catch (error) {
+      setAuthError(error.message || "Unable to sign out right now.");
+      setSignOutPending(false);
+    }
+  }, []);
 
   const addCategory = () => {
     if (!newCat.name.trim() || !newCat.amount) return;
@@ -432,6 +530,72 @@ export default function BudgetApp() {
     setImportRows(null);
   };
 
+  if (!isSupabaseConfigured()) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: C.bg,
+          display: "grid",
+          placeItems: "center",
+          padding: "24px",
+          fontFamily: "'DM Sans', sans-serif",
+          color: C.text,
+        }}
+      >
+        <GlobalStyles />
+        <div
+          style={{
+            maxWidth: "520px",
+            background: C.white,
+            border: `1px solid ${C.border}`,
+            borderRadius: "24px",
+            padding: "24px",
+            boxShadow: "0 18px 48px rgba(15,28,77,0.08)",
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: "24px" }}>Supabase Setup Needed</h1>
+          <p style={{ margin: "12px 0 0", lineHeight: 1.7 }}>
+            Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to your
+            local environment and Vercel project settings before loading FinTrack.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: C.bg,
+          display: "grid",
+          placeItems: "center",
+          fontFamily: "'DM Sans', sans-serif",
+          color: C.text,
+        }}
+      >
+        <GlobalStyles />
+        <div style={{ fontSize: "16px", fontWeight: 700 }}>Loading your FinTrack account...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <>
+        <GlobalStyles />
+        <AuthScreen
+          onSignIn={handleSignIn}
+          onSignUp={handleSignUp}
+          isLoading={authSubmitting}
+          authError={authError}
+        />
+      </>
+    );
+  }
+
   if (importRows) {
     return (
       <>
@@ -464,6 +628,9 @@ export default function BudgetApp() {
         year={year}
         onPrevMonth={prevMonth}
         onNextMonth={nextMonth}
+        userEmail={session.user.email}
+        onSignOut={handleSignOut}
+        isSigningOut={signOutPending}
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
