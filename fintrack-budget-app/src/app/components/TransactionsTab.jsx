@@ -27,17 +27,18 @@ export default function TransactionsTab({
   onPickSuggestion,
   onNewTransactionChange,
   onAddTransaction,
-  onDuplicateTransaction,
   onDeleteTransaction,
   onToggleTransactionSelection,
   onToggleAllTransactions,
   onDeleteSelectedTransactions,
   onUpdateTransactionCategory,
+  onAssignSelectedTransactions,
 }) {
   const selectedCount = selectedTransactionIds.length;
   const allSelected = transactions.length > 0 && selectedCount === transactions.length;
   const [activeTransaction, setActiveTransaction] = useState(null);
   const [activeCategoryId, setActiveCategoryId] = useState("");
+  const [bulkCategoryId, setBulkCategoryId] = useState("__none__");
 
   useEffect(() => {
     if (!activeTransaction) return;
@@ -70,6 +71,13 @@ export default function TransactionsTab({
     if (!activeTransaction) return;
     onUpdateTransactionCategory(activeTransaction.id, activeCategoryId);
     closeTransactionDetails();
+  };
+
+  const assignSelectedTransactions = () => {
+    if (selectedCount === 0 || bulkCategoryId === "__none__") return;
+
+    onAssignSelectedTransactions(bulkCategoryId);
+    setBulkCategoryId("__none__");
   };
 
   return (
@@ -250,23 +258,71 @@ export default function TransactionsTab({
               </span>
             </div>
 
-            <button
-              onClick={onDeleteSelectedTransactions}
-              disabled={selectedCount === 0}
-              style={{
-                background: selectedCount === 0 ? C.surfaceAlt : C.red,
-                border: "none",
-                color: selectedCount === 0 ? C.textLight : C.white,
-                padding: "10px 14px",
-                borderRadius: "8px",
-                cursor: selectedCount === 0 ? "default" : "pointer",
-                fontSize: "13px",
-                fontWeight: 700,
-                opacity: selectedCount === 0 ? 0.7 : 1,
-              }}
-            >
-              Delete Selected
-            </button>
+            {selectedCount > 0 && (
+              <div
+                className="tx-bulk-actions"
+                style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}
+              >
+                <select
+                  value={bulkCategoryId}
+                  onChange={(event) => setBulkCategoryId(event.target.value)}
+                  style={{
+                    background: C.white,
+                    border: `1.5px solid ${C.border}`,
+                    color: bulkCategoryId === "__none__" ? C.textLight : C.text,
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    minWidth: "150px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="__none__">Choose category</option>
+                  <option value="">Uncategorized</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="tx-bulk-buttons" style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    onClick={assignSelectedTransactions}
+                    disabled={bulkCategoryId === "__none__"}
+                    style={{
+                      background: bulkCategoryId === "__none__" ? C.surfaceAlt : C.blue,
+                      border: "none",
+                      color: bulkCategoryId === "__none__" ? C.textLight : C.white,
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      cursor: bulkCategoryId === "__none__" ? "default" : "pointer",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      opacity: bulkCategoryId === "__none__" ? 0.7 : 1,
+                    }}
+                  >
+                    Assign
+                  </button>
+
+                  <button
+                    onClick={onDeleteSelectedTransactions}
+                    style={{
+                      background: C.red,
+                      border: "none",
+                      color: C.white,
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -380,9 +436,6 @@ export default function TransactionsTab({
                   </div>
 
                   <div className="tx-actions" style={{ display: "flex", alignItems: "center", gap: "2px", opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
-                    <button className="dupe-btn" onClick={() => onDuplicateTransaction(transaction)} title="Repeat" style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "16px", padding: "4px 7px", borderRadius: "5px", transition: "all 0.15s", lineHeight: 1 }}>
-                      DUP
-                    </button>
                     <button
                       onClick={() => onDeleteTransaction(transaction)}
                       title="Delete transaction"

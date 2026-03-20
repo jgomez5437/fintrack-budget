@@ -544,6 +544,26 @@ export default function BudgetApp() {
     }
   };
 
+  const assignSelectedTransactionsToCategory = (categoryId) => {
+    update({
+      ...data,
+      transactions: transactions.map((transaction) =>
+        selectedTransactionIds.includes(transaction.id)
+          ? {
+              ...transaction,
+              categoryId: categoryId ? parseInt(categoryId, 10) : null,
+            }
+          : transaction,
+      ),
+    });
+
+    setSelectedTransactionIds([]);
+
+    if (categoryId) {
+      rememberCategory(categoryId);
+    }
+  };
+
   const confirmDelete = () => {
     if (!pendingDelete) return;
 
@@ -578,14 +598,6 @@ export default function BudgetApp() {
     }
 
     setPendingDelete(null);
-  };
-
-  const duplicateTransaction = (transaction) => {
-    openTxForm({
-      name: transaction.name,
-      amount: transaction.amount,
-      categoryId: transaction.categoryId?.toString(),
-    });
   };
 
   const openInline = (categoryId) => {
@@ -974,12 +986,12 @@ export default function BudgetApp() {
             onPickSuggestion={pickSuggestion}
             onNewTransactionChange={setNewTx}
             onAddTransaction={addTransaction}
-            onDuplicateTransaction={duplicateTransaction}
             onDeleteTransaction={deleteTransaction}
             onToggleTransactionSelection={toggleTransactionSelection}
             onToggleAllTransactions={toggleAllTransactions}
             onDeleteSelectedTransactions={deleteSelectedTransactions}
             onUpdateTransactionCategory={updateTransactionCategory}
+            onAssignSelectedTransactions={assignSelectedTransactionsToCategory}
           />
         )}
       </div>
