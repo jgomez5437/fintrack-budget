@@ -37,18 +37,72 @@ export async function ensureSupabaseSession() {
       } = await supabase.auth.getSession();
 
       if (sessionError) throw sessionError;
-      if (session) return session;
-
-      const { data, error } = await supabase.auth.signInAnonymously();
-      if (error) throw error;
-
-      return data.session;
+      return session;
     })().finally(() => {
       sessionPromise = null;
     });
   }
 
   return sessionPromise;
+}
+
+export async function getCurrentSession() {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) throw error;
+
+  return session;
+}
+
+export function onAuthStateChange(callback) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return { data: { subscription: { unsubscribe() {} } } };
+  }
+
+  return supabase.auth.onAuthStateChange(callback);
+}
+
+export async function signInWithEmail({ email, password }) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Supabase is not configured.");
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function signUpWithEmail({ email, password }) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Supabase is not configured.");
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function signOutUser() {
+  const supabase = getSupabase();
+  if (!supabase) return;
+
+  const { error } = await supabase.auth.signOut({ scope: "local" });
+  if (error) throw error;
 }
 
 export function isSupabaseConfigured() {
