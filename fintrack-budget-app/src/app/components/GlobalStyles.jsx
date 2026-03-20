@@ -12,7 +12,7 @@ export default function GlobalStyles() {
       .nav-btn:hover { background: rgba(255,255,255,0.3) !important; }
       .income-card:hover { box-shadow: 0 4px 20px rgba(30,80,212,0.25) !important; }
       .income-card:hover .edit-hint { opacity: 1 !important; }
-      .tab-btn:hover { color: ${C.blue} !important; }
+      .tab-btn:hover { color: inherit !important; }
       .cat-row:hover { background: ${C.blueLight} !important; }
       .cat-row:hover .row-actions { opacity: 1 !important; }
       .tx-row:hover { background: ${C.blueLight} !important; }
@@ -22,12 +22,12 @@ export default function GlobalStyles() {
       .dupe-btn:hover { background: ${C.blueLight} !important; color: ${C.blue} !important; }
       .cat-add-btn:hover { background: ${C.gold} !important; color: ${C.white} !important; border-color: ${C.gold} !important; }
       .add-cat-btn:hover { background: ${C.blue} !important; color: ${C.white} !important; }
-      .log-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.blue} !important; }
+      .log-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.text} !important; }
       .primary-btn:hover { background: ${C.blueDark} !important; }
       .cancel-btn:hover { border-color: ${C.borderHover} !important; color: ${C.textMid} !important; }
       .save-btn:hover { background: ${C.green} !important; color: ${C.white} !important; }
       .ac-item:hover { background: ${C.blueLight} !important; color: ${C.blue} !important; }
-      .import-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.blue} !important; }
+      .import-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.textMid} !important; }
       .import-row:hover { background: ${C.blueLight} !important; }
       .import-table-container { overflow-x: auto; }
       @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

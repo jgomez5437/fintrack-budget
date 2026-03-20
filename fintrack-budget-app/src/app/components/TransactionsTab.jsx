@@ -43,8 +43,8 @@ export default function TransactionsTab({
             justifyContent: "center",
             gap: "10px",
             background: isImportDragActive ? C.blueLight : C.white,
-            border: `1.5px solid ${isImportDragActive ? C.blue : C.border}`,
-            color: isImportDragActive ? C.blue : C.textMid,
+            border: `1.5px dashed ${isImportDragActive ? C.blue : C.blueMid}`,
+            color: isImportDragActive ? C.text : C.textMid,
             padding: "14px 20px",
             borderRadius: "10px",
             cursor: "pointer",
@@ -141,7 +141,7 @@ export default function TransactionsTab({
         </div>
       ) : (
         <div style={{ marginBottom: "20px" }}>
-          <button className="log-btn" onClick={() => onOpenTxForm()} style={{ width: "100%", background: C.white, border: `1.5px dashed ${C.blueMid}`, color: C.blue, padding: "16px", borderRadius: "10px", cursor: "pointer", fontSize: "14px", fontWeight: 600, display: "block", transition: "all 0.15s" }}>
+          <button className="log-btn" onClick={() => onOpenTxForm()} style={{ width: "100%", background: C.white, border: `1.5px solid ${C.border}`, color: C.text, padding: "16px", borderRadius: "10px", cursor: "pointer", fontSize: "14px", fontWeight: 600, display: "block", transition: "all 0.15s", boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
             + Log Transaction Manually
           </button>
           {transactions.length === 0 && (
