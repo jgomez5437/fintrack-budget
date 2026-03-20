@@ -249,7 +249,8 @@ export default function TransactionsTab({
                   type="checkbox"
                   checked={allSelected}
                   onChange={onToggleAllTransactions}
-                  style={{ width: "16px", height: "16px", accentColor: C.blue, cursor: "pointer" }}
+                  className="modern-checkbox"
+                  style={{ cursor: "pointer" }}
                 />
                 Select All
               </label>
@@ -352,13 +353,8 @@ export default function TransactionsTab({
                     checked={isSelected}
                     onChange={() => onToggleTransactionSelection(transaction.id)}
                     aria-label={`Select ${transaction.name}`}
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      accentColor: C.blue,
-                      cursor: "pointer",
-                      flexShrink: 0,
-                    }}
+                    className="modern-checkbox"
+                    style={{ cursor: "pointer", flexShrink: 0 }}
                   />
 
                   <div style={{ flex: 1, minWidth: 0 }}>

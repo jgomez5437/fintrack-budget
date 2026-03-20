@@ -32,6 +32,37 @@ export default function GlobalStyles() {
       .import-table-container { overflow-x: auto; }
       .import-review-grid { grid-template-columns: 32px minmax(0, 2fr) minmax(96px, auto) minmax(0, 1.5fr) 32px; }
       .import-amount-cell { justify-self: end; text-align: right; }
+      .modern-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 2px solid ${C.blueMid};
+        background: ${C.white};
+        display: inline-grid;
+        place-content: center;
+        margin: 0;
+        transition: all 0.15s ease;
+        box-shadow: 0 1px 2px rgba(30,80,212,0.08);
+      }
+      .modern-checkbox:hover {
+        border-color: ${C.blue};
+        box-shadow: 0 0 0 4px rgba(30,80,212,0.08);
+      }
+      .modern-checkbox:checked {
+        background-color: ${C.blue};
+        border-color: ${C.blue};
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.2 6.7 11 12 5.5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 11px 11px;
+        box-shadow: 0 0 0 4px rgba(30,80,212,0.14);
+      }
+      .modern-checkbox:focus-visible {
+        outline: 2px solid rgba(30,80,212,0.28);
+        outline-offset: 2px;
+      }
       .desktop-email-pill { display: block; }
       @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
