@@ -1,0 +1,44 @@
+export const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export const defaultData = () => ({
+  income: "",
+  categories: [],
+  transactions: [],
+});
+
+export const C = {
+  bg: "#f0f4ff",
+  surface: "#ffffff",
+  surfaceAlt: "#eef2ff",
+  border: "#d0d9f5",
+  borderHover: "#9aaee8",
+  blue: "#1e50d4",
+  blueDark: "#163ba8",
+  blueLight: "#e8eeff",
+  blueMid: "#c5d0f7",
+  gold: "#f5a623",
+  goldDark: "#d9891a",
+  goldLight: "#fff8ec",
+  green: "#16a34a",
+  greenLight: "#dcfce7",
+  red: "#dc2626",
+  redLight: "#fee2e2",
+  orange: "#ea580c",
+  text: "#0f1c4d",
+  textMid: "#4a5a8a",
+  textLight: "#8896bb",
+  white: "#ffffff",
+};
