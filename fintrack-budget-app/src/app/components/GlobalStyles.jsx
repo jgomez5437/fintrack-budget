@@ -30,6 +30,8 @@ export default function GlobalStyles() {
       .import-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.textMid} !important; }
       .import-row:hover { background: ${C.blueLight} !important; }
       .import-table-container { overflow-x: auto; }
+      .import-review-grid { grid-template-columns: 32px minmax(0, 2fr) minmax(96px, auto) minmax(0, 1.5fr) 32px; }
+      .import-amount-cell { justify-self: end; text-align: right; }
       .desktop-email-pill { display: block; }
       @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
@@ -39,8 +41,9 @@ export default function GlobalStyles() {
       .mini-bar-fill { transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
       @media (max-width: 768px) {
         .desktop-email-pill { display: none; }
-        .import-table-container { overflow-x: scroll; -webkit-overflow-scrolling: touch; }
-        .import-table-row { min-width: 600px; }
+        .import-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .import-table-row { min-width: 0; }
+        .import-review-grid { grid-template-columns: 28px minmax(0, 1.8fr) minmax(88px, auto) minmax(0, 1.1fr) 24px; gap: 6px; }
       }
     `}</style>
   );

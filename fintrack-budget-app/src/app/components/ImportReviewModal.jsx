@@ -105,10 +105,9 @@ export default function ImportReviewModal({
 
         <div className="import-table-container">
           <div
-            className="import-table-row"
+            className="import-table-row import-review-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: "32px minmax(0, 2fr) 90px minmax(0, 1.5fr) 32px",
               gap: "8px",
               padding: "8px 14px",
               fontSize: "11px",
@@ -136,11 +135,9 @@ export default function ImportReviewModal({
             {importRows.map((row, index) => (
               <div
                 key={row.id}
-                className="import-row import-table-row"
+                className="import-row import-table-row import-review-grid"
                 style={{
                   display: "grid",
-                  gridTemplateColumns:
-                    "32px minmax(0, 2fr) 90px minmax(0, 1.5fr) 32px",
                   gap: "8px",
                   alignItems: "center",
                   padding: "10px 14px",
@@ -206,6 +203,7 @@ export default function ImportReviewModal({
                 </div>
 
                 <div
+                  className="import-amount-cell"
                   style={{
                     fontSize: "14px",
                     fontWeight: 700,
