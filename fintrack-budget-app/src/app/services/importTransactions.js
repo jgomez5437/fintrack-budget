@@ -14,6 +14,60 @@ async function loadSheetJs() {
   return sheetJsPromise;
 }
 
+function formatImportDate(date) {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function parseExcelSerialDate(value) {
+  const excelEpoch = new Date(1899, 11, 30);
+  const parsedDate = new Date(excelEpoch);
+  parsedDate.setDate(excelEpoch.getDate() + Math.floor(value));
+
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  return parsedDate;
+}
+
+function parseTransactionDate(rawDate) {
+  if (rawDate instanceof Date && !Number.isNaN(rawDate.getTime())) {
+    return formatImportDate(rawDate);
+  }
+
+  if (typeof rawDate === "number" && Number.isFinite(rawDate)) {
+    const parsedDate = parseExcelSerialDate(rawDate);
+    return parsedDate ? formatImportDate(parsedDate) : todayLabel();
+  }
+
+  if (typeof rawDate === "string") {
+    const value = rawDate.trim();
+    if (!value) return todayLabel();
+
+    const matchedDate = value.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (matchedDate) {
+      const month = Number(matchedDate[1]) - 1;
+      const day = Number(matchedDate[2]);
+      const year = matchedDate[3]
+        ? Number(matchedDate[3].length === 2 ? `20${matchedDate[3]}` : matchedDate[3])
+        : new Date().getFullYear();
+      const parsedDate = new Date(year, month, day);
+
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return formatImportDate(parsedDate);
+      }
+    }
+
+    const parsedDate = new Date(value);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return formatImportDate(parsedDate);
+    }
+  }
+
+  return todayLabel();
+}
+
 export function parseImportFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -34,6 +88,7 @@ export function parseImportFile(file) {
 
         const parsedRows = [];
         for (const row of rows) {
+          const rawDate = row[0];
           const rawAmount = row[1];
           const rawDesc = row[4];
 
@@ -48,7 +103,7 @@ export function parseImportFile(file) {
             rawDesc: String(rawDesc),
             amount: Math.abs(amount).toFixed(2),
             categoryId: "",
-            date: todayLabel(),
+            date: parseTransactionDate(rawDate),
             include: true,
           });
         }

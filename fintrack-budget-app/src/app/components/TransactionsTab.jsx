@@ -163,67 +163,64 @@ export default function TransactionsTab({
       )}
 
       {transactions.length > 0 ? (
-        <>
+        <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               gap: "10px",
-              marginBottom: "12px",
               padding: "12px 14px",
               background: C.white,
-              border: `1.5px solid ${C.border}`,
-              borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+              borderBottom: `1px solid ${C.border}`,
               flexWrap: "wrap",
             }}
           >
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                color: C.text,
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={onToggleAllTransactions}
-                style={{ width: "16px", height: "16px", accentColor: C.blue, cursor: "pointer" }}
-              />
-              {allSelected ? "Clear all" : "Select all"}
-            </label>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  color: C.text,
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={onToggleAllTransactions}
+                  style={{ width: "16px", height: "16px", accentColor: C.blue, cursor: "pointer" }}
+                />
+                Select All
+              </label>
               <span style={{ fontSize: "13px", color: C.textLight, fontWeight: 600 }}>
                 {selectedCount} selected
               </span>
-              <button
-                onClick={onDeleteSelectedTransactions}
-                disabled={selectedCount === 0}
-                style={{
-                  background: selectedCount === 0 ? C.surfaceAlt : C.red,
-                  border: "none",
-                  color: selectedCount === 0 ? C.textLight : C.white,
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  cursor: selectedCount === 0 ? "default" : "pointer",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  opacity: selectedCount === 0 ? 0.7 : 1,
-                }}
-              >
-                Delete Selected
-              </button>
             </div>
+
+            <button
+              onClick={onDeleteSelectedTransactions}
+              disabled={selectedCount === 0}
+              style={{
+                background: selectedCount === 0 ? C.surfaceAlt : C.red,
+                border: "none",
+                color: selectedCount === 0 ? C.textLight : C.white,
+                padding: "10px 14px",
+                borderRadius: "8px",
+                cursor: selectedCount === 0 ? "default" : "pointer",
+                fontSize: "13px",
+                fontWeight: 700,
+                opacity: selectedCount === 0 ? 0.7 : 1,
+              }}
+            >
+              Delete Selected
+            </button>
           </div>
 
-          <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
+          <div>
             {transactions.map((transaction, index) => {
               const category = getCategoryById(transaction.categoryId);
               const isSelected = selectedTransactionIds.includes(transaction.id);
@@ -315,7 +312,7 @@ export default function TransactionsTab({
               );
             })}
           </div>
-        </>
+        </div>
       ) : (
         <div style={{ textAlign: "center", color: C.textLight, fontSize: "14px", padding: "40px 0" }}>
           No transactions yet this month
