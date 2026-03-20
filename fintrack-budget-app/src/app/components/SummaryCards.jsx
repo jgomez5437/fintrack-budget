@@ -11,15 +11,24 @@ export default function SummaryCards({
   onIncomeInputChange,
   onSaveIncome,
   onCancelIncomeEdit,
+  totalPlanned,
   totalSpent,
   transactionCount,
   formatCurrency,
 }) {
+  const neutralCardStyle = {
+    background: C.white,
+    border: `1.5px solid ${C.border}`,
+    borderRadius: "14px",
+    padding: "20px",
+    boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+  };
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
         gap: "12px",
         marginBottom: "24px",
       }}
@@ -123,13 +132,29 @@ export default function SummaryCards({
       </div>
 
       <div
-        style={{
-          background: C.white,
-          border: `1.5px solid ${C.border}`,
-          borderRadius: "14px",
-          padding: "20px",
-          boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
-        }}
+        style={neutralCardStyle}
+      >
+        <div
+          style={{
+            fontSize: "11px",
+            color: C.textLight,
+            letterSpacing: "2px",
+            marginBottom: "8px",
+            fontWeight: 600,
+          }}
+        >
+          PLANNED
+        </div>
+        <div style={{ fontSize: "26px", fontWeight: 700, color: C.text }}>
+          ${formatCurrency(totalPlanned)}
+        </div>
+        <div style={{ fontSize: "12px", color: C.textLight, marginTop: "4px" }}>
+          {totalPlanned > 0 ? "Total budgeted" : "No categories yet"}
+        </div>
+      </div>
+
+      <div
+        style={neutralCardStyle}
       >
         <div
           style={{
@@ -179,7 +204,7 @@ export default function SummaryCards({
         >
           {leftover < 0 ? "-" : ""}${formatCurrency(leftover)}
         </div>
-        {income > 0 && !leftoverPositive && (
+        {totalPlanned > 0 && !leftoverPositive && (
           <div
             style={{
               fontSize: "11px",

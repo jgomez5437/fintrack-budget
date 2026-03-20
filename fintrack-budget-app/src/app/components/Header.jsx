@@ -5,6 +5,7 @@ export default function Header({
   year,
   onPrevMonth,
   onNextMonth,
+  canGoPrev = true,
   userEmail,
   onSignOut,
   isSigningOut = false,
@@ -55,20 +56,22 @@ export default function Header({
           <button
             className="nav-btn"
             onClick={onPrevMonth}
+            disabled={!canGoPrev}
             style={{
-              background: "rgba(255,255,255,0.15)",
+              background: canGoPrev ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.08)",
               border: "1.5px solid rgba(255,255,255,0.3)",
-              color: C.white,
+              color: canGoPrev ? C.white : "rgba(255,255,255,0.45)",
               width: "36px",
               height: "36px",
               borderRadius: "8px",
-              cursor: "pointer",
+              cursor: canGoPrev ? "pointer" : "not-allowed",
               fontSize: "20px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               transition: "all 0.15s",
               flexShrink: 0,
+              opacity: canGoPrev ? 1 : 0.75,
             }}
           >
             {"<"}

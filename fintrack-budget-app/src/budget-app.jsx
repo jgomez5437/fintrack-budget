@@ -31,6 +31,14 @@ function getNextMonthTarget(month, year) {
   return { month: month + 1, year };
 }
 
+function getPreviousMonthTarget(month, year) {
+  if (month === 0) {
+    return { month: 11, year: year - 1 };
+  }
+
+  return { month: month - 1, year };
+}
+
 function cloneBudgetSetup(sourceData) {
   return {
     income: sourceData.income ?? "",
@@ -75,6 +83,7 @@ export default function BudgetApp() {
   const [isImportDragActive, setIsImportDragActive] = useState(false);
   const [nextMonthPrompt, setNextMonthPrompt] = useState(null);
   const [isCreatingNextMonth, setIsCreatingNextMonth] = useState(false);
+  const [canGoPrev, setCanGoPrev] = useState(false);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
@@ -110,6 +119,12 @@ export default function BudgetApp() {
 
     const { data: listener } = onAuthStateChange((_event, nextSession) => {
       if (!isMounted) return;
+
+      if (nextSession) {
+        const currentDate = new Date();
+        setMonth(currentDate.getMonth());
+        setYear(currentDate.getFullYear());
+      }
 
       setSession(nextSession);
       setAuthLoading(false);
@@ -158,6 +173,32 @@ export default function BudgetApp() {
     loadPreference();
   }, [authLoading, session, storage]);
 
+  useEffect(() => {
+    if (authLoading || !session) return;
+
+    const previousTarget = getPreviousMonthTarget(month, year);
+    let isActive = true;
+
+    async function checkPreviousMonth() {
+      try {
+        const result = await storage.get(`budget-${previousTarget.month}-${previousTarget.year}`);
+        if (isActive) {
+          setCanGoPrev(Boolean(result));
+        }
+      } catch {
+        if (isActive) {
+          setCanGoPrev(false);
+        }
+      }
+    }
+
+    checkPreviousMonth();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authLoading, month, year, session, storage]);
+
   const persist = useCallback(
     async (nextData) => {
       try {
@@ -179,6 +220,7 @@ export default function BudgetApp() {
 
   const {
     income,
+    totalPlanned,
     transactions,
     spentByCategory,
     totalSpent,
@@ -315,12 +357,11 @@ export default function BudgetApp() {
   };
 
   const prevMonth = () => {
-    if (month === 0) {
-      setMonth(11);
-      setYear((current) => current - 1);
-      return;
-    }
-    setMonth((current) => current - 1);
+    if (!canGoPrev) return;
+
+    const target = getPreviousMonthTarget(month, year);
+    setMonth(target.month);
+    setYear(target.year);
   };
 
   const nextMonth = () => {
@@ -710,6 +751,7 @@ export default function BudgetApp() {
         year={year}
         onPrevMonth={prevMonth}
         onNextMonth={nextMonth}
+        canGoPrev={canGoPrev}
         userEmail={session.user.email}
         onSignOut={handleSignOut}
         isSigningOut={signOutPending}
@@ -727,6 +769,7 @@ export default function BudgetApp() {
           onIncomeInputChange={setIncomeInput}
           onSaveIncome={saveIncome}
           onCancelIncomeEdit={cancelIncomeEdit}
+          totalPlanned={totalPlanned}
           totalSpent={totalSpent}
           transactionCount={transactions.length}
           formatCurrency={formatCurrency}
