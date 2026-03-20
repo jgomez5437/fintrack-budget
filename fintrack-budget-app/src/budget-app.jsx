@@ -29,7 +29,7 @@ function cleanMerchant(raw) {
   let s = raw.trim();
 
   // Strip leading transaction type prefixes + date pattern
-  s = s.replace(/^(PURCHASE AUTHORIZED ON|RECURRING PAYMENT AUTHORIZED ON|BILL PAYMENT AUTHORIZED ON|CARD PURCHASE|NON-CHASE ATM WITHDRAW|ATM WITHDRAWAL|ONLINE TRANSFER\s+\w+\s+\w+\s+ON|ONLINE PAYMENT TO|WIRE TRANSFER TO|WIRE TRANSFER FROM|DIRECT DEPOSIT|ACH DEBIT|ACH CREDIT|OVERDRAFT|RETURNED|POS PURCHASE|DEBIT CARD PURCHASE)\s+/i, "");
+  s = s.replace(/^(PURCHASE AUTHORIZED ON|RECURRING PAYMENT AUTHORIZED ON|BILL PAYMENT AUTHORIZED ON|CARD PURCHASE|NON-CHASE ATM WITHDRAW|ATM WITHDRAWAL|ONLINE TRANSFER\s+\w+\s+\w+\s+ON|ONLINE PAYMENT TO|WIRE TRANSFER TO|WIRE TRANSFER FROM|DIRECT DEPOSIT|ACH DEBIT|ACH CREDIT|ACH|OVERDRAFT|RETURNED|POS PURCHASE|DEBIT CARD PURCHASE)\s+/i, "");
 
   // Strip leading date like "03/18 " or "03/18/2024 "
   s = s.replace(/^\d{1,2}\/\d{1,2}(\/\d{2,4})?\s+/, "");
@@ -39,42 +39,49 @@ function cleanMerchant(raw) {
   s = s.replace(/\s+(CARD\s+\d{4}|[SP]\d{10,}|\d{15,})\s*$/i, "");
   // Auth/ref codes: long digit string at end
   s = s.replace(/\s+\d{8,}\s*$/, "");
-  // State + zip at end: "AZ 85704" or just "AZ P000..."
+  // State + zip at end: "AZ 85704" or just "AZ P000..." or city-like patterns
   s = s.replace(/\s+[A-Z]{2}\s+\d{5}(-\d{4})?\s*$/, "");
   s = s.replace(/\s+[A-Z]{2}\s*$/, "");
   // Phone numbers: "866-579-7172" or similar
   s = s.replace(/\s+\d{3}[-.\s]\d{3}[-.\s]\d{4}\s*$/, "");
-  // URLs like ".COM" or "NETFLIX.COM"
   // Strip store number patterns: " 01634" " #00001234"
   s = s.replace(/\s+#\d+\s*$/, "");
-  s = s.replace(/\s+\d{4,6}\s*$/, ""); // trailing store numbers
+  s = s.replace(/\s+\d{4,}\s*$/, ""); // trailing store numbers or reference codes
+  
+  // Strip trailing addresses: common street words followed by numbers/cities
+  s = s.replace(/\s+\d{1,5}\s+(ST|AVE|BLVD|RD|DR|LN|CT|HWY|FWY|PKWY|STE|WAY|PL|CIR)\b.*$/i, "");
 
-  // Strip city-like ALL CAPS at the end (multiple words after merchant)
-  // Keep only the first 1-3 meaningful words
+  // Keep only the first meaningful words (usually the merchant name)
   const words = s.trim().split(/\s+/);
 
-  // If it starts with ZELLE / CHECK / ATM, keep the whole phrase short
+  // If it starts with ZELLE / CHECK / ATM, keep the phrase short
   if (/^(ZELLE|CHECK|ATM)/i.test(words[0])) {
     return toTitleCase(words.slice(0, 4).join(" "));
   }
 
-  // Find where the merchant name ends — stop at a run of digits, or "ST ", "AVE ", "BLVD " street suffix, or state abbrev
+  // Find where the merchant name ends
   const streetSuffixes = new Set(["ST","AVE","BLVD","RD","DR","LN","CT","HWY","FWY","PKWY","STE","WAY","PL","CIR"]);
-  const stopWords = new Set(["ON","AT","IN","FOR","LLC","INC","CORP","CO"]);
   let end = words.length;
+  
+  // Stop at common address/city markers or long digit sequences
   for (let i = 1; i < words.length; i++) {
     const w = words[i].replace(/[^A-Z0-9]/gi, "").toUpperCase();
-    if (/^\d{4,}$/.test(w)) { end = i; break; }           // long number = store/id
-    if (streetSuffixes.has(w) && i >= 2) { end = i; break; } // street suffix
-    if (/^[A-Z]{2}$/.test(w) && i >= 2) { end = i; break; } // 2-letter state
+    // Stop if we hit a long number (store ID, reference code)
+    if (/^\d{4,}$/.test(w)) { end = i; break; }
+    // Stop at street suffix (if we have at least 2 words)
+    if (streetSuffixes.has(w) && i >= 2) { end = i; break; }
+    // Stop at 2-letter state code (if we have at least 2 words)
+    if (/^[A-Z]{2}$/.test(w) && i >= 2) { end = i; break; }
   }
 
-  // Also cap at 4 words max to avoid dragging in address junk
-  end = Math.min(end, 4);
+  // Cap at 3 words max for merchant names to keep them concise
+  end = Math.min(end, 3);
   const result = words.slice(0, end).join(" ").trim();
 
-  // Clean up ".COM" domain suffixes for display
-  const titled = toTitleCase(result.replace(/\.COM$/i, "").replace(/\.NET$/i, "").replace(/\.ORG$/i, ""));
+  // Clean up domain suffixes for display
+  const cleaned = result.replace(/\.COM$/i, "").replace(/\.NET$/i, "").replace(/\.ORG$/i, "").replace(/\.CO$/i, "");
+  const titled = toTitleCase(cleaned);
+  
   return titled || toTitleCase(words[0]);
 }
 
@@ -256,7 +263,8 @@ export default function BudgetApp() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const wb = XLSX.read(evt.target.result, { type: "array" });
+        const data = evt.target.result;
+        const wb = XLSX.read(data, { type: file.name.toLowerCase().endsWith('csv') ? 'string' : 'array', raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
@@ -290,10 +298,15 @@ export default function BudgetApp() {
         }
         setImportRows(parsed);
       } catch (err) {
-        setImportError("Couldn't read the file. Make sure it's a valid .xlsx or .xls file.");
+        setImportError("Couldn't read the file. Make sure it's a valid .xlsx, .xls, or .csv file.");
       }
     };
-    reader.readAsArrayBuffer(file);
+
+    if (file.name.toLowerCase().endsWith('csv')) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
     e.target.value = "";
   };
 
@@ -326,6 +339,11 @@ export default function BudgetApp() {
           input::placeholder { color: ${C.textLight}; }
           select option { background: ${C.white}; color: ${C.text}; }
           .import-row:hover { background: ${C.blueLight} !important; }
+          .import-table-container { overflow-x: auto; }
+          @media (max-width: 768px) {
+            .import-table-container { overflow-x: scroll; -webkit-overflow-scrolling: touch; }
+            .import-table-row { min-width: 600px; }
+          }
         `}</style>
 
         {/* Modal header */}
@@ -346,33 +364,35 @@ export default function BudgetApp() {
             <strong style={{ color: C.blue }}>Review before importing.</strong> Merchant names have been cleaned automatically. Edit any name, assign categories, and uncheck rows you don't want. Transactions without a category will still be imported and can be categorized later.
           </div>
 
-          {/* Column headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 90px 1fr 32px", gap: "8px", padding: "8px 14px", fontSize: "11px", fontWeight: 700, color: C.textLight, letterSpacing: "1.5px", textTransform: "uppercase" }}>
-            <div></div><div>Merchant</div><div>Amount</div><div>Category</div><div></div>
-          </div>
+          <div className="import-table-container">
+            {/* Column headers */}
+            <div className="import-table-row" style={{ display: "grid", gridTemplateColumns: "32px minmax(0, 2fr) 90px minmax(0, 1.5fr) 32px", gap: "8px", padding: "8px 14px", fontSize: "11px", fontWeight: 700, color: C.textLight, letterSpacing: "1.5px", textTransform: "uppercase" }}>
+              <div></div><div>Merchant</div><div>Amount</div><div>Category</div><div></div>
+            </div>
 
-          {/* Rows */}
-          <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
-            {importRows.map((row, i) => (
-              <div key={row.id} className="import-row" style={{ display: "grid", gridTemplateColumns: "32px 1fr 90px 1fr 32px", gap: "8px", alignItems: "center", padding: "10px 14px", background: !row.include ? "#f8f8fc" : i % 2 === 0 ? C.white : C.surfaceAlt, borderBottom: i < importRows.length - 1 ? `1px solid ${C.border}` : "none", transition: "background 0.1s", opacity: row.include ? 1 : 0.45 }}>
-                {/* Checkbox */}
-                <input type="checkbox" checked={row.include} onChange={e => updateImportRow(row.id, "include", e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: C.blue }} />
-                {/* Merchant name — editable */}
-                <div>
-                  <input value={row.name} onChange={e => updateImportRow(row.id, "name", e.target.value)} style={{ background: "transparent", border: "none", color: C.text, fontSize: "14px", fontWeight: 600, width: "100%", padding: "2px 0" }} />
-                  <div style={{ fontSize: "11px", color: C.textLight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }} title={row.rawDesc}>{row.rawDesc}</div>
+            {/* Rows */}
+            <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
+              {importRows.map((row, i) => (
+                <div key={row.id} className="import-row import-table-row" style={{ display: "grid", gridTemplateColumns: "32px minmax(0, 2fr) 90px minmax(0, 1.5fr) 32px", gap: "8px", alignItems: "center", padding: "10px 14px", background: !row.include ? "#f8f8fc" : i % 2 === 0 ? C.white : C.surfaceAlt, borderBottom: i < importRows.length - 1 ? `1px solid ${C.border}` : "none", transition: "background 0.1s", opacity: row.include ? 1 : 0.45 }}>
+                  {/* Checkbox */}
+                  <input type="checkbox" checked={row.include} onChange={e => updateImportRow(row.id, "include", e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: C.blue, flexShrink: 0 }} />
+                  {/* Merchant name — editable */}
+                  <div style={{ minWidth: 0 }}>
+                    <input value={row.name} onChange={e => updateImportRow(row.id, "name", e.target.value)} style={{ background: "transparent", border: "none", color: C.text, fontSize: "14px", fontWeight: 600, width: "100%", padding: "2px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.name} />
+                    <div style={{ fontSize: "11px", color: C.textLight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }} title={row.rawDesc}>{row.rawDesc}</div>
+                  </div>
+                  {/* Amount */}
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: C.red, whiteSpace: "nowrap" }}>−${row.amount}</div>
+                  {/* Category picker */}
+                  <select value={row.categoryId} onChange={e => updateImportRow(row.id, "categoryId", e.target.value)} style={{ background: row.categoryId ? C.white : C.surfaceAlt, border: `1.5px solid ${row.categoryId ? C.border : C.blueMid}`, color: row.categoryId ? C.text : C.textLight, padding: "7px 10px", borderRadius: "7px", fontSize: "13px", width: "100%", minWidth: 0, cursor: "pointer" }}>
+                    <option value="">No category</option>
+                    {data.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  </select>
+                  {/* Row delete */}
+                  <button onClick={() => setImportRows(rows => rows.filter(r => r.id !== row.id))} style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "18px", lineHeight: 1, padding: "0", flexShrink: 0 }} onMouseOver={e => e.target.style.color = C.red} onMouseOut={e => e.target.style.color = C.textLight}>×</button>
                 </div>
-                {/* Amount */}
-                <div style={{ fontSize: "14px", fontWeight: 700, color: C.red }}>−${row.amount}</div>
-                {/* Category picker */}
-                <select value={row.categoryId} onChange={e => updateImportRow(row.id, "categoryId", e.target.value)} style={{ background: row.categoryId ? C.white : C.surfaceAlt, border: `1.5px solid ${row.categoryId ? C.border : C.blueMid}`, color: row.categoryId ? C.text : C.textLight, padding: "7px 10px", borderRadius: "7px", fontSize: "13px", width: "100%", cursor: "pointer" }}>
-                  <option value="">No category</option>
-                  {data.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                </select>
-                {/* Row delete */}
-                <button onClick={() => setImportRows(rows => rows.filter(r => r.id !== row.id))} style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "18px", lineHeight: 1, padding: "0" }} onMouseOver={e => e.target.style.color = C.red} onMouseOut={e => e.target.style.color = C.textLight}>×</button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Bottom confirm */}
@@ -423,7 +443,7 @@ export default function BudgetApp() {
       `}</style>
 
       {/* hidden file input */}
-      <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFileUpload} style={{ display: "none" }} />
+      <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
 
       {/* ── Header ── */}
       <div style={{ background: C.blue, padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", position: "sticky", top: 0, zIndex: 10, boxShadow: "0 2px 16px rgba(30,80,212,0.25)" }}>
