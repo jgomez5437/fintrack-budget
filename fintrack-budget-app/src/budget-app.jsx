@@ -526,6 +526,24 @@ export default function BudgetApp() {
     });
   };
 
+  const updateTransactionCategory = (transactionId, categoryId) => {
+    update({
+      ...data,
+      transactions: transactions.map((transaction) =>
+        transaction.id === transactionId
+          ? {
+              ...transaction,
+              categoryId: categoryId ? parseInt(categoryId, 10) : null,
+            }
+          : transaction,
+      ),
+    });
+
+    if (categoryId) {
+      rememberCategory(categoryId);
+    }
+  };
+
   const confirmDelete = () => {
     if (!pendingDelete) return;
 
@@ -961,6 +979,7 @@ export default function BudgetApp() {
             onToggleTransactionSelection={toggleTransactionSelection}
             onToggleAllTransactions={toggleAllTransactions}
             onDeleteSelectedTransactions={deleteSelectedTransactions}
+            onUpdateTransactionCategory={updateTransactionCategory}
           />
         )}
       </div>

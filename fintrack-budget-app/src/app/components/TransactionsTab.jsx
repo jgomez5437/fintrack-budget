@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { C } from "../constants";
+import TransactionDetailsModal from "./TransactionDetailsModal";
 import { inputStyle, selectStyle } from "../styles";
 
 export default function TransactionsTab({
@@ -30,12 +32,59 @@ export default function TransactionsTab({
   onToggleTransactionSelection,
   onToggleAllTransactions,
   onDeleteSelectedTransactions,
+  onUpdateTransactionCategory,
 }) {
   const selectedCount = selectedTransactionIds.length;
   const allSelected = transactions.length > 0 && selectedCount === transactions.length;
+  const [activeTransaction, setActiveTransaction] = useState(null);
+  const [activeCategoryId, setActiveCategoryId] = useState("");
+
+  useEffect(() => {
+    if (!activeTransaction) return;
+
+    const latestTransaction = transactions.find(
+      (transaction) => transaction.id === activeTransaction.id,
+    );
+
+    if (!latestTransaction) {
+      setActiveTransaction(null);
+      setActiveCategoryId("");
+      return;
+    }
+
+    setActiveTransaction(latestTransaction);
+    setActiveCategoryId(latestTransaction.categoryId?.toString() || "");
+  }, [activeTransaction, transactions]);
+
+  const openTransactionDetails = (transaction) => {
+    setActiveTransaction(transaction);
+    setActiveCategoryId(transaction.categoryId?.toString() || "");
+  };
+
+  const closeTransactionDetails = () => {
+    setActiveTransaction(null);
+    setActiveCategoryId("");
+  };
+
+  const saveTransactionCategory = () => {
+    if (!activeTransaction) return;
+    onUpdateTransactionCategory(activeTransaction.id, activeCategoryId);
+    closeTransactionDetails();
+  };
 
   return (
     <div className="fade-up">
+      {activeTransaction && (
+        <TransactionDetailsModal
+          transaction={activeTransaction}
+          categories={categories}
+          categoryId={activeCategoryId}
+          onCategoryChange={setActiveCategoryId}
+          onSave={saveTransactionCategory}
+          onClose={closeTransactionDetails}
+        />
+      )}
+
       <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "stretch" }}>
         <button
           className="import-btn"
@@ -257,20 +306,72 @@ export default function TransactionsTab({
                   />
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <button
+                      onClick={() => openTransactionDetails(transaction)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        margin: 0,
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        color: C.text,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        width: "100%",
+                        textAlign: "left",
+                        cursor: "pointer",
+                      }}
+                    >
                       {transaction.name}
-                    </div>
+                    </button>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px", flexWrap: "wrap" }}>
                       {category ? (
-                        <span style={{ fontSize: "11px", color: C.blue, background: C.blueLight, padding: "2px 8px", borderRadius: "4px", fontWeight: 600 }}>
+                        <button
+                          onClick={() => openTransactionDetails(transaction)}
+                          style={{
+                            fontSize: "11px",
+                            color: C.blue,
+                            background: C.blueLight,
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            fontWeight: 600,
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                        >
                           {category.name}
-                        </span>
+                        </button>
                       ) : (
-                        <span style={{ fontSize: "11px", color: C.textLight, background: C.surfaceAlt, padding: "2px 8px", borderRadius: "4px" }}>
+                        <button
+                          onClick={() => openTransactionDetails(transaction)}
+                          style={{
+                            fontSize: "11px",
+                            color: C.textLight,
+                            background: C.surfaceAlt,
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                        >
                           Uncategorized
-                        </span>
+                        </button>
                       )}
-                      <span style={{ fontSize: "11px", color: C.textLight }}>{transaction.date}</span>
+                      <button
+                        onClick={() => openTransactionDetails(transaction)}
+                        style={{
+                          fontSize: "11px",
+                          color: C.textLight,
+                          background: "transparent",
+                          border: "none",
+                          padding: 0,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {transaction.date}
+                      </button>
                     </div>
                   </div>
 
