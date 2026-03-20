@@ -4,6 +4,7 @@ import { inputStyle, selectStyle } from "../styles";
 export default function TransactionsTab({
   categories,
   transactions,
+  selectedTransactionIds,
   spentByCategory,
   formatCurrency,
   getCategoryById,
@@ -26,7 +27,13 @@ export default function TransactionsTab({
   onAddTransaction,
   onDuplicateTransaction,
   onDeleteTransaction,
+  onToggleTransactionSelection,
+  onToggleAllTransactions,
+  onDeleteSelectedTransactions,
 }) {
+  const selectedCount = selectedTransactionIds.length;
+  const allSelected = transactions.length > 0 && selectedCount === transactions.length;
+
   return (
     <div className="fade-up">
       <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "stretch" }}>
@@ -156,79 +163,159 @@ export default function TransactionsTab({
       )}
 
       {transactions.length > 0 ? (
-        <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
-          {transactions.map((transaction, index) => {
-            const category = getCategoryById(transaction.categoryId);
-            return (
-              <div
-                key={transaction.id}
-                className="tx-row"
+        <>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              marginBottom: "12px",
+              padding: "12px 14px",
+              background: C.white,
+              border: `1.5px solid ${C.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+              flexWrap: "wrap",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                color: C.text,
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={onToggleAllTransactions}
+                style={{ width: "16px", height: "16px", accentColor: C.blue, cursor: "pointer" }}
+              />
+              {allSelected ? "Clear all" : "Select all"}
+            </label>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "13px", color: C.textLight, fontWeight: 600 }}>
+                {selectedCount} selected
+              </span>
+              <button
+                onClick={onDeleteSelectedTransactions}
+                disabled={selectedCount === 0}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "14px 18px",
-                  background: index % 2 === 0 ? C.white : C.surfaceAlt,
-                  borderBottom: index < transactions.length - 1 ? `1px solid ${C.border}` : "none",
-                  transition: "background 0.15s",
+                  background: selectedCount === 0 ? C.surfaceAlt : C.red,
+                  border: "none",
+                  color: selectedCount === 0 ? C.textLight : C.white,
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  cursor: selectedCount === 0 ? "default" : "pointer",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  opacity: selectedCount === 0 ? 0.7 : 1,
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {transaction.name}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px", flexWrap: "wrap" }}>
-                    {category ? (
-                      <span style={{ fontSize: "11px", color: C.blue, background: C.blueLight, padding: "2px 8px", borderRadius: "4px", fontWeight: 600 }}>
-                        {category.name}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: "11px", color: C.textLight, background: C.surfaceAlt, padding: "2px 8px", borderRadius: "4px" }}>
-                        Uncategorized
-                      </span>
-                    )}
-                    <span style={{ fontSize: "11px", color: C.textLight }}>{transaction.date}</span>
-                  </div>
-                </div>
+                Delete Selected
+              </button>
+            </div>
+          </div>
 
-                <div style={{ fontSize: "15px", color: C.red, fontWeight: 700, flexShrink: 0 }}>
-                  -${formatCurrency(parseFloat(transaction.amount))}
-                </div>
-
-                <div className="tx-actions" style={{ display: "flex", alignItems: "center", gap: "2px", opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
-                  <button className="dupe-btn" onClick={() => onDuplicateTransaction(transaction)} title="Repeat" style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "16px", padding: "4px 7px", borderRadius: "5px", transition: "all 0.15s", lineHeight: 1 }}>
-                    DUP
-                  </button>
-                  <button
-                    onClick={() => onDeleteTransaction(transaction)}
-                    title="Delete transaction"
-                    aria-label={`Delete ${transaction.name}`}
+          <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
+            {transactions.map((transaction, index) => {
+              const category = getCategoryById(transaction.categoryId);
+              const isSelected = selectedTransactionIds.includes(transaction.id);
+              return (
+                <div
+                  key={transaction.id}
+                  className="tx-row"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "14px 18px",
+                    background: isSelected
+                      ? C.blueLight
+                      : index % 2 === 0
+                        ? C.white
+                        : C.surfaceAlt,
+                    borderBottom: index < transactions.length - 1 ? `1px solid ${C.border}` : "none",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleTransactionSelection(transaction.id)}
+                    aria-label={`Select ${transaction.name}`}
                     style={{
-                      background: "transparent",
-                      border: "none",
-                      color: C.textLight,
+                      width: "16px",
+                      height: "16px",
+                      accentColor: C.blue,
                       cursor: "pointer",
-                      padding: "4px 6px",
-                      borderRadius: "5px",
-                      transition: "color 0.15s",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M9 3H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
+                  />
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {transaction.name}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px", flexWrap: "wrap" }}>
+                      {category ? (
+                        <span style={{ fontSize: "11px", color: C.blue, background: C.blueLight, padding: "2px 8px", borderRadius: "4px", fontWeight: 600 }}>
+                          {category.name}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "11px", color: C.textLight, background: C.surfaceAlt, padding: "2px 8px", borderRadius: "4px" }}>
+                          Uncategorized
+                        </span>
+                      )}
+                      <span style={{ fontSize: "11px", color: C.textLight }}>{transaction.date}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: "15px", color: C.red, fontWeight: 700, flexShrink: 0 }}>
+                    -${formatCurrency(parseFloat(transaction.amount))}
+                  </div>
+
+                  <div className="tx-actions" style={{ display: "flex", alignItems: "center", gap: "2px", opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
+                    <button className="dupe-btn" onClick={() => onDuplicateTransaction(transaction)} title="Repeat" style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "16px", padding: "4px 7px", borderRadius: "5px", transition: "all 0.15s", lineHeight: 1 }}>
+                      DUP
+                    </button>
+                    <button
+                      onClick={() => onDeleteTransaction(transaction)}
+                      title="Delete transaction"
+                      aria-label={`Delete ${transaction.name}`}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: C.textLight,
+                        cursor: "pointer",
+                        padding: "4px 6px",
+                        borderRadius: "5px",
+                        transition: "color 0.15s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M9 3H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div style={{ textAlign: "center", color: C.textLight, fontSize: "14px", padding: "40px 0" }}>
           No transactions yet this month

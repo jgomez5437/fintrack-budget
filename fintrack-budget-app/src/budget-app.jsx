@@ -88,6 +88,7 @@ export default function BudgetApp() {
   const [canGoPrev, setCanGoPrev] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState([]);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
@@ -234,6 +235,12 @@ export default function BudgetApp() {
     barColor,
     pastNames,
   } = buildBudgetSummary(data);
+
+  useEffect(() => {
+    setSelectedTransactionIds((currentIds) =>
+      currentIds.filter((id) => transactions.some((transaction) => transaction.id === id)),
+    );
+  }, [transactions]);
 
   const getSuggestions = useCallback(
     (value, limit) =>
@@ -484,6 +491,41 @@ export default function BudgetApp() {
     });
   };
 
+  const toggleTransactionSelection = (transactionId) => {
+    setSelectedTransactionIds((currentIds) =>
+      currentIds.includes(transactionId)
+        ? currentIds.filter((id) => id !== transactionId)
+        : [...currentIds, transactionId],
+    );
+  };
+
+  const toggleAllTransactions = () => {
+    setSelectedTransactionIds((currentIds) =>
+      currentIds.length === transactions.length ? [] : transactions.map((transaction) => transaction.id),
+    );
+  };
+
+  const deleteSelectedTransactions = () => {
+    if (selectedTransactionIds.length === 0) return;
+
+    setPendingDelete({
+      type: "transactions",
+      ids: selectedTransactionIds,
+      title:
+        selectedTransactionIds.length === 1
+          ? "Remove 1 selected transaction?"
+          : `Remove ${selectedTransactionIds.length} selected transactions?`,
+      description:
+        selectedTransactionIds.length === 1
+          ? "This will permanently delete the selected transaction from this month's activity."
+          : "This will permanently delete all selected transactions from this month's activity.",
+      confirmLabel:
+        selectedTransactionIds.length === 1
+          ? "Delete selected transaction"
+          : `Delete ${selectedTransactionIds.length} transactions`,
+    });
+  };
+
   const confirmDelete = () => {
     if (!pendingDelete) return;
 
@@ -504,6 +546,17 @@ export default function BudgetApp() {
           (transaction) => transaction.categoryId !== pendingDelete.id,
         ),
       });
+    }
+
+    if (pendingDelete.type === "transactions") {
+      const idsToDelete = new Set(pendingDelete.ids);
+      update({
+        ...data,
+        transactions: transactions.filter(
+          (transaction) => !idsToDelete.has(transaction.id),
+        ),
+      });
+      setSelectedTransactionIds([]);
     }
 
     setPendingDelete(null);
@@ -882,6 +935,7 @@ export default function BudgetApp() {
           <TransactionsTab
             categories={data.categories}
             transactions={transactions}
+            selectedTransactionIds={selectedTransactionIds}
             spentByCategory={spentByCategory}
             formatCurrency={formatCurrency}
             getCategoryById={(id) => getCategoryById(data.categories, id)}
@@ -904,6 +958,9 @@ export default function BudgetApp() {
             onAddTransaction={addTransaction}
             onDuplicateTransaction={duplicateTransaction}
             onDeleteTransaction={deleteTransaction}
+            onToggleTransactionSelection={toggleTransactionSelection}
+            onToggleAllTransactions={toggleAllTransactions}
+            onDeleteSelectedTransactions={deleteSelectedTransactions}
           />
         )}
       </div>
