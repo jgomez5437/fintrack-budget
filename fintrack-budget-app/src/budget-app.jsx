@@ -22,6 +22,7 @@ import BudgetTab from "./app/components/BudgetTab";
 import TransactionsTab from "./app/components/TransactionsTab";
 import ImportReviewModal from "./app/components/ImportReviewModal";
 import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
+import DeleteTransactionModal from "./app/components/DeleteTransactionModal";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -84,6 +85,7 @@ export default function BudgetApp() {
   const [nextMonthPrompt, setNextMonthPrompt] = useState(null);
   const [isCreatingNextMonth, setIsCreatingNextMonth] = useState(false);
   const [canGoPrev, setCanGoPrev] = useState(false);
+  const [pendingDeleteTransaction, setPendingDeleteTransaction] = useState(null);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
@@ -466,11 +468,20 @@ export default function BudgetApp() {
     closeTxForm();
   };
 
-  const deleteTransaction = (id) => {
+  const deleteTransaction = (transactionToDelete) => {
+    setPendingDeleteTransaction(transactionToDelete);
+  };
+
+  const confirmDeleteTransaction = () => {
+    if (!pendingDeleteTransaction) return;
+
     update({
       ...data,
-      transactions: transactions.filter((transaction) => transaction.id !== id),
+      transactions: transactions.filter(
+        (transaction) => transaction.id !== pendingDeleteTransaction.id,
+      ),
     });
+    setPendingDeleteTransaction(null);
   };
 
   const duplicateTransaction = (transaction) => {
@@ -743,6 +754,14 @@ export default function BudgetApp() {
           onTransfer={() => createNextMonth(true)}
           onCreateBlank={() => createNextMonth(false)}
           onCancel={() => setNextMonthPrompt(null)}
+        />
+      )}
+
+      {pendingDeleteTransaction && (
+        <DeleteTransactionModal
+          transaction={pendingDeleteTransaction}
+          onConfirm={confirmDeleteTransaction}
+          onCancel={() => setPendingDeleteTransaction(null)}
         />
       )}
 

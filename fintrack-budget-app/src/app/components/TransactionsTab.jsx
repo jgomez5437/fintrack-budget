@@ -199,8 +199,30 @@ export default function TransactionsTab({
                   <button className="dupe-btn" onClick={() => onDuplicateTransaction(transaction)} title="Repeat" style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "16px", padding: "4px 7px", borderRadius: "5px", transition: "all 0.15s", lineHeight: 1 }}>
                     DUP
                   </button>
-                  <button onClick={() => onDeleteTransaction(transaction.id)} style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", fontSize: "22px", padding: "0 4px", lineHeight: 1, transition: "color 0.15s" }}>
-                    x
+                  <button
+                    onClick={() => onDeleteTransaction(transaction)}
+                    title="Delete transaction"
+                    aria-label={`Delete ${transaction.name}`}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: C.textLight,
+                      cursor: "pointer",
+                      padding: "4px 6px",
+                      borderRadius: "5px",
+                      transition: "color 0.15s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M9 3H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
                   </button>
                 </div>
               </div>
