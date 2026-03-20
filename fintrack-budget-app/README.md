@@ -1,16 +1,45 @@
-# React + Vite
+# FinTrack Budget App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+FinTrack is a React + Vite budgeting app that runs fully in the browser.
 
-Currently, two official plugins are available:
+## Deploying To Vercel
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This project is configured as a static Vite app for Vercel.
 
-## React Compiler
+1. Import the repository into Vercel.
+2. Keep the framework preset as `Vite`.
+3. Use the default install command.
+4. Use `npm run build` as the build command.
+5. Use `dist` as the output directory.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The app now uses browser `localStorage` automatically when `window.storage` is not available, so it works in normal web deployments without any custom host runtime.
 
-## Expanding the ESLint configuration
+## Local Development
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This app expects a modern Node.js runtime. The project declares:
+
+- `node >= 20.19.0`
+
+Common commands:
+
+- `npm install`
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
+
+## Notes
+
+- Imported spreadsheet parsing is loaded dynamically in the browser, which avoids Vite production build issues from source-level remote imports.
+- Budget data is stored per month in the browser, so each user keeps their own local copy unless you connect a backend.
+
+## Backend Recommendation
+
+If you want to add a backend to this Vite app, use Supabase first.
+
+Why it fits this app well:
+
+- It works cleanly with a client-rendered React app.
+- You get Postgres, auth, and row-level security together.
+- It is an easy next step if you want accounts, syncing across devices, or shared household budgets.
+
+If you only need a few server endpoints and no database yet, Vercel Functions are a good lightweight option. If you want persistent user data, Supabase is the stronger default.

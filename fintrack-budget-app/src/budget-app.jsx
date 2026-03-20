@@ -3,6 +3,7 @@ import { C, defaultData } from "./app/constants";
 import { buildBudgetSummary, getCategoryById } from "./app/utils/budget";
 import { formatCurrency, todayLabel } from "./app/utils/formatters";
 import { parseImportFile } from "./app/services/importTransactions";
+import { getStorage } from "./app/services/storage";
 import GlobalStyles from "./app/components/GlobalStyles";
 import Header from "./app/components/Header";
 import SummaryCards from "./app/components/SummaryCards";
@@ -13,6 +14,7 @@ import TransactionsTab from "./app/components/TransactionsTab";
 import ImportReviewModal from "./app/components/ImportReviewModal";
 
 export default function BudgetApp() {
+  const storage = getStorage();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -46,7 +48,7 @@ export default function BudgetApp() {
   useEffect(() => {
     async function loadBudget() {
       try {
-        const result = await window.storage.get(`budget-${month}-${year}`);
+        const result = await storage.get(`budget-${month}-${year}`);
         if (result) {
           setData({ ...defaultData(), ...JSON.parse(result.value) });
           return;
@@ -58,12 +60,12 @@ export default function BudgetApp() {
     }
 
     loadBudget();
-  }, [month, year]);
+  }, [month, year, storage]);
 
   useEffect(() => {
     async function loadPreference() {
       try {
-        const result = await window.storage.get("fintrack-last-cat");
+        const result = await storage.get("fintrack-last-cat");
         if (result) setLastCategoryId(result.value);
       } catch {
         // Ignore preference storage failures.
@@ -71,12 +73,12 @@ export default function BudgetApp() {
     }
 
     loadPreference();
-  }, []);
+  }, [storage]);
 
   const persist = useCallback(
     async (nextData) => {
       try {
-        await window.storage.set(
+        await storage.set(
           `budget-${month}-${year}`,
           JSON.stringify(nextData),
         );
@@ -84,7 +86,7 @@ export default function BudgetApp() {
         // Ignore persistence failures to keep the UI responsive.
       }
     },
-    [month, year],
+    [month, year, storage],
   );
 
   const update = useCallback(
@@ -124,11 +126,11 @@ export default function BudgetApp() {
   const rememberCategory = useCallback((id) => {
     setLastCategoryId(id);
     try {
-      window.storage.set("fintrack-last-cat", id);
+      storage.set("fintrack-last-cat", id);
     } catch {
       // Ignore preference write failures.
     }
-  }, []);
+  }, [storage]);
 
   const addCategory = () => {
     if (!newCat.name.trim() || !newCat.amount) return;

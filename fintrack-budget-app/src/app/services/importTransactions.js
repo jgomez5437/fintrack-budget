@@ -1,20 +1,33 @@
-import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs";
 import { cleanMerchant } from "../utils/merchant";
 import { todayLabel } from "../utils/formatters";
+
+let sheetJsPromise;
+
+async function loadSheetJs() {
+  if (!sheetJsPromise) {
+    sheetJsPromise = import(
+      /* @vite-ignore */
+      "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs"
+    );
+  }
+
+  return sheetJsPromise;
+}
 
 export function parseImportFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
+        const { read, utils } = await loadSheetJs();
         const fileData = event.target.result;
-        const workbook = XLSX.read(fileData, {
+        const workbook = read(fileData, {
           type: file.name.toLowerCase().endsWith("csv") ? "string" : "array",
           raw: true,
         });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(worksheet, {
+        const rows = utils.sheet_to_json(worksheet, {
           header: 1,
           defval: "",
         });
