@@ -1,6 +1,6 @@
 # FinTrack Budget App
 
-FinTrack is a React + Vite budgeting app that runs fully in the browser.
+FinTrack is a React + Vite budgeting app. It now supports Supabase as the primary backend, with browser `localStorage` as a fallback when Supabase environment variables are missing.
 
 ## Deploying To Vercel
 
@@ -11,8 +11,9 @@ This project is configured as a static Vite app for Vercel.
 3. Use the default install command.
 4. Use `npm run build` as the build command.
 5. Use `dist` as the output directory.
-
-The app now uses browser `localStorage` automatically when `window.storage` is not available, so it works in normal web deployments without any custom host runtime.
+6. Add these environment variables in Vercel:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 
 ## Local Development
 
@@ -26,20 +27,20 @@ Common commands:
 - `npm run dev`
 - `npm run build`
 - `npm run preview`
+- Copy `.env.example` to `.env.local` and fill in your Supabase values.
+
+## Supabase Setup
+
+1. In the Supabase dashboard, open the SQL editor and run [`supabase/schema.sql`](./supabase/schema.sql).
+2. In `Authentication > Providers`, enable anonymous sign-ins.
+3. Copy your project URL and anon key into `.env.local` for local development.
+4. Add the same values to your Vercel environment variables.
+
+The current implementation uses anonymous Supabase auth so the app can create a secure per-user session without adding a sign-in screen yet.
 
 ## Notes
 
 - Imported spreadsheet parsing is loaded dynamically in the browser, which avoids Vite production build issues from source-level remote imports.
-- Budget data is stored per month in the browser, so each user keeps their own local copy unless you connect a backend.
-
-## Backend Recommendation
-
-If you want to add a backend to this Vite app, use Supabase first.
-
-Why it fits this app well:
-
-- It works cleanly with a client-rendered React app.
-- You get Postgres, auth, and row-level security together.
-- It is an easy next step if you want accounts, syncing across devices, or shared household budgets.
-
-If you only need a few server endpoints and no database yet, Vercel Functions are a good lightweight option. If you want persistent user data, Supabase is the stronger default.
+- Budget data is stored in the `monthly_budgets` table one record per month and user.
+- The `user_preferences` table stores the last selected category for quick-add flows.
+- If Supabase variables are not configured, the app falls back to browser `localStorage` so the UI still works.
