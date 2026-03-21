@@ -22,7 +22,7 @@ export default function AddCategoryModal({
         style={{
           width: "100%",
           maxWidth: "480px",
-          background: C.white,
+          background: C.surface,
           borderRadius: "24px",
           border: `1px solid ${C.border}`,
           boxShadow: "0 24px 70px rgba(15,28,77,0.18)",
@@ -60,7 +60,7 @@ export default function AddCategoryModal({
             }
             onKeyDown={(event) => event.key === "Enter" && onConfirm()}
             style={{
-              background: C.white,
+              background: C.surface,
               border: `1.5px solid ${C.border}`,
               borderRadius: "12px",
               color: C.text,
@@ -73,7 +73,7 @@ export default function AddCategoryModal({
             style={{
               display: "flex",
               alignItems: "center",
-              background: C.white,
+              background: C.surface,
               border: `1.5px solid ${C.border}`,
               borderRadius: "12px",
               padding: "0 14px",

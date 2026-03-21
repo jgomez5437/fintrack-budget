@@ -73,7 +73,7 @@ export default function CategoryAlertBanner({ alerts, formatCurrency, onDismiss 
                 gap: "12px",
                 padding: "12px 14px",
                 borderRadius: "14px",
-                background: C.white,
+                background: C.surface,
                 border: `1px solid ${C.border}`,
               }}
             >

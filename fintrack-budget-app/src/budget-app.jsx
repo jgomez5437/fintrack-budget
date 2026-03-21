@@ -67,6 +67,9 @@ function cloneBudgetSetup(sourceData) {
 export default function BudgetApp() {
   const storage = getStorage();
   const now = new Date();
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("fintrack-theme") || "light";
+  });
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -140,6 +143,15 @@ export default function BudgetApp() {
   const uncategorizedTransactions = transactions.filter(
     (transaction) => transaction.categoryId === null || transaction.categoryId === undefined,
   );
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("fintrack-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1079,7 +1091,7 @@ export default function BudgetApp() {
         <div
           style={{
             maxWidth: "520px",
-            background: C.white,
+            background: C.surface,
             border: `1px solid ${C.border}`,
             borderRadius: "24px",
             padding: "24px",
@@ -1197,6 +1209,8 @@ export default function BudgetApp() {
         userEmail={session.user.email}
         onSignOut={handleSignOut}
         isSigningOut={signOutPending}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
@@ -1210,7 +1224,7 @@ export default function BudgetApp() {
               gap: "12px",
               padding: "14px 16px",
               marginBottom: "18px",
-              background: C.white,
+              background: C.surface,
               border: `1.5px solid ${C.gold}`,
               borderRadius: "14px",
               boxShadow: "0 8px 24px rgba(245,166,35,0.12)",

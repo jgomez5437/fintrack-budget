@@ -24,7 +24,7 @@ export default function NextMonthPromptModal({
         style={{
           width: "100%",
           maxWidth: "520px",
-          background: C.white,
+          background: C.surface,
           borderRadius: "24px",
           border: `1px solid ${C.border}`,
           boxShadow: "0 24px 70px rgba(15,28,77,0.18)",

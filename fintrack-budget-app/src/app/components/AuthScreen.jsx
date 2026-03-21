@@ -45,7 +45,7 @@ export default function AuthScreen({ onSignIn, onSignUp, isLoading, authError })
     border: `1.5px solid ${C.border}`,
     fontSize: "15px",
     color: C.text,
-    background: C.white,
+    background: C.surface,
   };
 
   return (
@@ -131,7 +131,7 @@ export default function AuthScreen({ onSignIn, onSignUp, isLoading, authError })
                 border: "none",
                 borderRadius: "12px",
                 padding: "11px 12px",
-                background: mode === "signin" ? C.white : "transparent",
+                background: mode === "signin" ? C.surface : "transparent",
                 color: mode === "signin" ? C.text : C.textMid,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -147,7 +147,7 @@ export default function AuthScreen({ onSignIn, onSignUp, isLoading, authError })
                 border: "none",
                 borderRadius: "12px",
                 padding: "11px 12px",
-                background: mode === "signup" ? C.white : "transparent",
+                background: mode === "signup" ? C.surface : "transparent",
                 color: mode === "signup" ? C.text : C.textMid,
                 fontWeight: 700,
                 cursor: "pointer",

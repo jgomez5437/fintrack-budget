@@ -109,7 +109,7 @@ export default function TransactionsTab({
           style={{
             position: "relative",
             marginBottom: "20px",
-            background: C.white,
+            background: C.surface,
             border: `1.5px solid ${uncategorizedSaveSuccess ? C.green : C.blueMid}`,
             borderRadius: "18px",
             padding: "18px",
@@ -258,7 +258,7 @@ export default function TransactionsTab({
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            background: isImportDragActive ? C.blueLight : C.white,
+            background: isImportDragActive ? C.blueLight : C.surface,
             border: `1.5px dashed ${isImportDragActive ? C.blue : C.blueMid}`,
             color: isImportDragActive ? C.text : C.textMid,
             padding: "14px 20px",
@@ -313,7 +313,7 @@ export default function TransactionsTab({
         <div
           className="slide-down"
           style={{
-            background: C.white,
+            background: C.surface,
             border: `1.5px solid ${C.border}`,
             borderRadius: "14px",
             padding: "20px",
@@ -350,7 +350,7 @@ export default function TransactionsTab({
                     top: "calc(100% + 4px)",
                     left: 0,
                     right: 0,
-                    background: C.white,
+                    background: C.surface,
                     border: `1.5px solid ${C.border}`,
                     borderRadius: "8px",
                     overflow: "hidden",
@@ -383,7 +383,7 @@ export default function TransactionsTab({
               style={{
                 display: "flex",
                 alignItems: "center",
-                background: C.white,
+                background: C.surface,
                 border: `1.5px solid ${C.border}`,
                 borderRadius: "8px",
                 padding: "0 14px",
@@ -492,7 +492,7 @@ export default function TransactionsTab({
             onClick={() => onOpenTxForm()}
             style={{
               width: "100%",
-              background: C.white,
+              background: C.surface,
               border: `1.5px solid ${C.border}`,
               color: C.text,
               padding: "16px",
@@ -541,7 +541,7 @@ export default function TransactionsTab({
           style={{
             marginBottom: "16px",
             padding: "12px 14px",
-            background: C.white,
+            background: C.surface,
             border: `1.5px solid ${C.border}`,
             borderRadius: "10px",
             boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
@@ -570,7 +570,7 @@ export default function TransactionsTab({
               justifyContent: "space-between",
               gap: "10px",
               padding: "12px 14px",
-              background: C.white,
+              background: C.surface,
               borderBottom: `1px solid ${C.border}`,
               flexWrap: "wrap",
             }}
@@ -610,7 +610,7 @@ export default function TransactionsTab({
                   value={bulkCategoryId}
                   onChange={(event) => setBulkCategoryId(event.target.value)}
                   style={{
-                    background: C.white,
+                    background: C.surface,
                     border: `1.5px solid ${C.border}`,
                     color: bulkCategoryId === "__none__" ? C.textLight : C.text,
                     padding: "10px 12px",
@@ -684,7 +684,7 @@ export default function TransactionsTab({
                     background: isSelected
                       ? C.blueLight
                       : index % 2 === 0
-                        ? C.white
+                        ? C.surface
                         : C.surfaceAlt,
                     borderBottom:
                       index < transactions.length - 1 ? `1px solid ${C.border}` : "none",

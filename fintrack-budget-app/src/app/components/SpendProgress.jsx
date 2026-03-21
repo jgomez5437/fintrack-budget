@@ -11,7 +11,7 @@ export default function SpendProgress({ income, spendPct, barColor }) {
   return (
     <div
       style={{
-        background: C.white,
+        background: C.surface,
         border: `1.5px solid ${C.border}`,
         borderRadius: "12px",
         padding: "16px 20px",

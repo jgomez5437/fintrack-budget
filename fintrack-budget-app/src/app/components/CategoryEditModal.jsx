@@ -26,7 +26,7 @@ export default function CategoryEditModal({
         style={{
           width: "100%",
           maxWidth: "480px",
-          background: C.white,
+          background: C.surface,
           borderRadius: "24px",
           border: `1px solid ${C.border}`,
           boxShadow: "0 24px 70px rgba(15,28,77,0.18)",
@@ -59,7 +59,7 @@ export default function CategoryEditModal({
             style={{
               display: "flex",
               alignItems: "center",
-              background: C.white,
+              background: C.surface,
               border: `1.5px solid ${C.border}`,
               borderRadius: "8px",
               padding: "0 14px",

@@ -30,7 +30,7 @@ export default function SummaryCards({
   onCancelSavingsEdit,
 }) {
   const neutralCardStyle = {
-    background: C.white,
+    background: C.surface,
     border: `1.5px solid ${C.border}`,
     borderRadius: "14px",
     padding: "20px",

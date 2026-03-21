@@ -1,7 +1,7 @@
 import { C } from "./constants";
 
 export const inputStyle = {
-  background: C.white,
+  background: C.surface,
   border: `1.5px solid ${C.border}`,
   color: C.text,
   padding: "12px 14px",

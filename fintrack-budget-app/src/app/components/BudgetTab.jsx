@@ -1,6 +1,6 @@
 import { C } from "../constants";
 import CategoryEditModal from "./CategoryEditModal";
-import { inputStyle, selectStyle } from "../styles";
+import { inputStyle } from "../styles";
 
 export default function BudgetTab({
   categories,
@@ -10,9 +10,6 @@ export default function BudgetTab({
   inlineCatId,
   inlineTx,
   inlineAutocomplete,
-  quickTx,
-  quickAutocomplete,
-  showQuickAdd,
   formatCurrency,
   onEditValueChange,
   onStartEdit,
@@ -27,14 +24,6 @@ export default function BudgetTab({
   onInlineAmountChange,
   onSubmitInline,
   onOpenAddCategory,
-  quickNameRef,
-  onOpenQuickAdd,
-  onCloseQuickAdd,
-  onQuickNameChange,
-  onPickQuickSuggestion,
-  onQuickAmountChange,
-  onQuickCategoryChange,
-  onSubmitQuickAdd,
 }) {
   const activeEditCategory = categories.find((category) => category.id === editingId);
 
@@ -67,7 +56,7 @@ export default function BudgetTab({
           onClick={onOpenAddCategory}
           style={{
             width: "100%",
-            background: C.white,
+            background: C.surface,
             border: `1.5px dashed ${C.blueMid}`,
             color: C.blue,
             padding: "15px",
@@ -115,7 +104,7 @@ export default function BudgetTab({
                 onClick={() => onStartEdit(category)}
                 style={{
                   padding: "14px 18px",
-                  background: index % 2 === 0 ? C.white : C.surfaceAlt,
+                  background: index % 2 === 0 ? C.surface : C.surfaceAlt,
                   borderBottom:
                     index < categories.length - 1
                       ? `1px solid ${C.border}`
@@ -338,7 +327,7 @@ export default function BudgetTab({
                               top: "calc(100% + 4px)",
                               left: 0,
                               right: 0,
-                              background: C.white,
+                              background: C.surface,
                               border: `1.5px solid ${C.border}`,
                               borderRadius: "8px",
                               overflow: "hidden",
@@ -372,7 +361,7 @@ export default function BudgetTab({
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            background: C.white,
+                            background: C.surface,
                             border: `1.5px solid ${C.border}`,
                             borderRadius: "8px",
                             padding: "0 12px",

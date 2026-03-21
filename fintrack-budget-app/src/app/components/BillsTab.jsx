@@ -68,7 +68,7 @@ export default function BillsTab({ bills = [], onAddBill, onDeleteBill, formatCu
         <div
           className="slide-down"
           style={{
-            background: C.white,
+            background: C.surface,
             border: `1.5px solid ${C.border}`,
             borderRadius: "12px",
             padding: "18px",
@@ -99,7 +99,7 @@ export default function BillsTab({ bills = [], onAddBill, onDeleteBill, formatCu
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  background: C.white,
+                  background: C.surface,
                   border: `1.5px solid ${C.border}`,
                   borderRadius: "8px",
                   padding: "0 12px",
@@ -186,7 +186,7 @@ export default function BillsTab({ bills = [], onAddBill, onDeleteBill, formatCu
           style={{
             textAlign: "center",
             padding: "48px 20px",
-            background: C.white,
+            background: C.surface,
             border: `1.5px dashed ${C.border}`,
             borderRadius: "12px",
             color: C.textLight,
@@ -213,7 +213,7 @@ export default function BillsTab({ bills = [], onAddBill, onDeleteBill, formatCu
             <div
               key={bill.id}
               style={{
-                background: C.white,
+                background: C.surface,
                 border: `1.5px solid ${C.border}`,
                 borderRadius: "12px",
                 padding: "20px",

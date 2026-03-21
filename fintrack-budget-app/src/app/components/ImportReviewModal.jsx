@@ -142,9 +142,9 @@ export default function ImportReviewModal({
                   alignItems: "center",
                   padding: "10px 14px",
                   background: !row.include
-                    ? "#f8f8fc"
+                    ? C.surfaceAlt
                     : index % 2 === 0
-                      ? C.white
+                      ? C.surface
                       : C.surfaceAlt,
                   borderBottom:
                     index < importRows.length - 1 ? `1px solid ${C.border}` : "none",
@@ -220,7 +220,7 @@ export default function ImportReviewModal({
                     onUpdateRow(row.id, "categoryId", event.target.value)
                   }
                   style={{
-                    background: row.categoryId ? C.white : C.surfaceAlt,
+                    background: row.categoryId ? C.surface : C.surfaceAlt,
                     border: `1.5px solid ${row.categoryId ? C.border : C.blueMid}`,
                     color: row.categoryId ? C.text : C.textLight,
                     padding: "7px 10px",
@@ -263,7 +263,7 @@ export default function ImportReviewModal({
           <button
             onClick={onCancel}
             style={{
-              background: C.white,
+              background: C.surface,
               border: `1.5px solid ${C.border}`,
               color: C.textMid,
               padding: "12px 22px",

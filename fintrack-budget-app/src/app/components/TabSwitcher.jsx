@@ -12,7 +12,7 @@ export default function TabSwitcher({ activeTab, onTabChange }) {
       style={{
         display: "flex",
         gap: "4px",
-        background: C.white,
+        background: C.surface,
         border: `1.5px solid ${C.border}`,
         borderRadius: "12px",
         padding: "4px",
