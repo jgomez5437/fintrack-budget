@@ -27,7 +27,7 @@ export function buildBudgetSummary(data, month = new Date().getMonth(), year = n
     0,
   );
   const leftover = totalPlanned - totalSpent;
-  const expectedSurplus = income - totalSpent;
+  const expectedSurplus = income - totalPlanned;
   const now = new Date();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const isCurrentMonth = now.getMonth() === month && now.getFullYear() === year;

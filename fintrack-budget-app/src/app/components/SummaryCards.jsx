@@ -224,7 +224,7 @@ export default function SummaryCards({
             marginTop: "4px",
           }}
         >
-          Income - Spent
+          Income - Planned
         </div>
       </div>
 
