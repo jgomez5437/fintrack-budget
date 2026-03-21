@@ -44,6 +44,7 @@ export default function BudgetTab({
     offsetX: 0,
     currentY: 0,
     ghostHeight: 0,
+    rowHeights: [], // cached at drag start
     scrollRAF: null,
   });
 
@@ -102,6 +103,9 @@ export default function BudgetTab({
     const row = rows[index];
     if (!row) return;
 
+    // Measure and cache all row heights so we can compute shifts
+    const rowHeights = rows.map((r) => r.getBoundingClientRect().height);
+
     const rect = row.getBoundingClientRect();
     const state = dragStateRef.current;
     state.active = true;
@@ -112,6 +116,7 @@ export default function BudgetTab({
     state.offsetX = event.clientX - rect.left;
     state.currentY = event.clientY - state.offsetY + window.scrollY;
     state.ghostHeight = rect.height;
+    state.rowHeights = rowHeights;
 
     setDragIndex(index);
     setDropIndex(index);
@@ -251,6 +256,24 @@ export default function BudgetTab({
             const isDragging = dragIndex === index;
             const isDropTarget = dropIndex === index && dragIndex !== null && dragIndex !== index;
 
+            // Compute how much this row should shift to "open the gap" for the ghost card
+            let rowShiftY = 0;
+            if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
+              const from = dragIndex;
+              const to = dropIndex;
+              const draggedH = dragStateRef.current.rowHeights[from] || dragStateRef.current.ghostHeight || 80;
+              if (index === from) {
+                // The dragged row stays put (ghost is carrying it)
+                rowShiftY = 0;
+              } else if (to > from) {
+                // Dragging DOWN: rows from (from+1) to (to) shift UP to fill the void
+                if (index > from && index <= to) rowShiftY = -draggedH;
+              } else {
+                // Dragging UP: rows from (to) to (from-1) shift DOWN to fill the void
+                if (index >= to && index < from) rowShiftY = draggedH;
+              }
+            }
+
             return (
               <div
                 key={category.id}
@@ -258,15 +281,17 @@ export default function BudgetTab({
                 onClick={() => { if (dragIndex === null) onStartEdit(category); }}
                 style={{
                   padding: "14px 18px 14px 8px",
-                  background: isDropTarget ? C.blueLight : index % 2 === 0 ? C.surface : C.surfaceAlt,
+                  background: index % 2 === 0 ? C.surface : C.surfaceAlt,
                   borderBottom: index < categories.length - 1 ? `1px solid ${C.border}` : "none",
-                  transition: "background 0.15s, opacity 0.15s, transform 0.15s",
+                  transition: dragIndex !== null
+                    ? "transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s"
+                    : "background 0.15s, opacity 0.15s",
                   animation: dragIndex === null ? `fadeUp 0.25s ease ${index * 0.04}s both` : "none",
                   cursor: isDragging ? "grabbing" : "pointer",
-                  opacity: isDragging ? 0.35 : 1,
-                  outline: isDropTarget ? `2px solid ${C.blue}` : "none",
-                  outlineOffset: "-2px",
+                  opacity: isDragging ? 0.25 : 1,
+                  transform: `translateY(${rowShiftY}px)`,
                   position: "relative",
+                  zIndex: isDragging ? 0 : 1,
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
