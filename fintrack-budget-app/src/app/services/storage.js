@@ -11,6 +11,10 @@ const preferenceColumnsByKey = {
   [FIRST_NAME_KEY]: "first_name",
 };
 
+// These preferences are personal to the signed-in user and should NOT
+// be redirected to the primary/linked account's data.
+const personalPreferenceKeys = new Set([FIRST_NAME_KEY]);
+
 function isMissingPreferenceColumnError(error, columnName) {
   const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
   return message.includes(columnName.toLowerCase()) && message.includes("column");
@@ -130,10 +134,12 @@ function createSupabaseStorage() {
 
         const preferenceColumn = preferenceColumnsByKey[key];
         if (preferenceColumn) {
+          // Personal preferences (like name) always belong to the actual signed-in user.
+          const prefUserId = personalPreferenceKeys.has(key) ? sessionUserId : userId;
           const { data, error } = await supabase
             .from("user_preferences")
             .select(preferenceColumn)
-            .eq("user_id", userId)
+            .eq("user_id", prefUserId)
             .maybeSingle();
 
           if (error) {
