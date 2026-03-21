@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { C, defaultData } from "./app/constants";
-import { buildBudgetSummary, getCategoryById } from "./app/utils/budget";
+import {
+  buildBudgetSummary,
+  getCategoryAlerts,
+  getCategoryById,
+} from "./app/utils/budget";
 import { formatCurrency, todayLabel } from "./app/utils/formatters";
 import { parseImportFile } from "./app/services/importTransactions";
 import { autoAssignImportCategory } from "./app/utils/importCategoryRules";
-import { getStorage } from "./app/services/storage";
+import {
+  CATEGORY_ALERT_COUNT_KEY,
+  getStorage,
+} from "./app/services/storage";
 import {
   getCurrentSession,
   isSupabaseConfigured,
@@ -25,6 +32,7 @@ import ImportReviewModal from "./app/components/ImportReviewModal";
 import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
 import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
 import AddCategoryModal from "./app/components/AddCategoryModal";
+import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -90,12 +98,34 @@ export default function BudgetApp() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [selectedTransactionIds, setSelectedTransactionIds] = useState([]);
+  const [budgetLoaded, setBudgetLoaded] = useState(false);
+  const [authCycleReady, setAuthCycleReady] = useState(false);
+  const [shouldShowCategoryAlert, setShouldShowCategoryAlert] = useState(false);
+  const [categoryAlertItems, setCategoryAlertItems] = useState([]);
+  const [categoryAlertEvaluated, setCategoryAlertEvaluated] = useState(false);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
   const inlineNameRef = useRef(null);
   const quickNameRef = useRef(null);
   const fileInputRef = useRef(null);
+  const authCycleRef = useRef({ userId: null, counted: false });
+
+  const {
+    expectedSurplus,
+    expectedSurplusPositive,
+    income,
+    projectedMonthEndSpent,
+    totalPlanned,
+    transactions,
+    spentByCategory,
+    totalSpent,
+    leftover,
+    spendPct,
+    leftoverPositive,
+    barColor,
+    pastNames,
+  } = buildBudgetSummary(data, month, year);
 
   useEffect(() => {
     let isMounted = true;
@@ -146,23 +176,114 @@ export default function BudgetApp() {
   }, []);
 
   useEffect(() => {
-    if (authLoading || !session) return;
+    if (authLoading || !session) {
+      setBudgetLoaded(false);
+      return;
+    }
 
     async function loadBudget() {
+      setBudgetLoaded(false);
+
       try {
         const result = await storage.get(`budget-${month}-${year}`);
         if (result) {
           setData({ ...defaultData(), ...JSON.parse(result.value) });
+          setBudgetLoaded(true);
           return;
         }
         setData(defaultData());
       } catch {
         setData(defaultData());
+      } finally {
+        setBudgetLoaded(true);
       }
     }
 
     loadBudget();
   }, [authLoading, month, year, session, storage]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!session) {
+      authCycleRef.current = { userId: null, counted: false };
+      setAuthCycleReady(false);
+      setShouldShowCategoryAlert(false);
+      setCategoryAlertItems([]);
+      setCategoryAlertEvaluated(false);
+      return;
+    }
+
+    const userId = session.user.id;
+    if (authCycleRef.current.userId !== userId) {
+      authCycleRef.current = { userId, counted: false };
+    }
+
+    if (authCycleRef.current.counted) return;
+
+    authCycleRef.current.counted = true;
+    setAuthCycleReady(false);
+    let isActive = true;
+
+    async function trackAuthCycle() {
+      try {
+        const result = await storage.get(CATEGORY_ALERT_COUNT_KEY);
+        const currentCount = Number.parseInt(result?.value ?? "0", 10);
+        const normalizedCount = Number.isFinite(currentCount) ? currentCount : 0;
+        const nextCount = normalizedCount + 1;
+
+        await storage.set(CATEGORY_ALERT_COUNT_KEY, String(nextCount));
+
+        if (!isActive) return;
+        setShouldShowCategoryAlert(nextCount % 2 === 0);
+      } catch {
+        if (!isActive) return;
+        setShouldShowCategoryAlert(false);
+      } finally {
+        if (isActive) {
+          setAuthCycleReady(true);
+          setCategoryAlertItems([]);
+          setCategoryAlertEvaluated(false);
+        }
+      }
+    }
+
+    trackAuthCycle();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authLoading, session, storage]);
+
+  useEffect(() => {
+    if (
+      authLoading ||
+      !session ||
+      !budgetLoaded ||
+      !authCycleReady ||
+      categoryAlertEvaluated
+    ) {
+      return;
+    }
+
+    if (!shouldShowCategoryAlert) {
+      setCategoryAlertItems([]);
+      setCategoryAlertEvaluated(true);
+      return;
+    }
+
+    setCategoryAlertItems(getCategoryAlerts(data.categories, spentByCategory, 85));
+    setCategoryAlertEvaluated(true);
+  }, [
+    authLoading,
+    authCycleReady,
+    budgetLoaded,
+    categoryAlertEvaluated,
+    data.categories,
+    session,
+    shouldShowCategoryAlert,
+    spentByCategory,
+  ]);
 
   useEffect(() => {
     if (authLoading || !session) return;
@@ -223,22 +344,6 @@ export default function BudgetApp() {
     },
     [persist],
   );
-
-  const {
-    expectedSurplus,
-    expectedSurplusPositive,
-    income,
-    projectedMonthEndSpent,
-    totalPlanned,
-    transactions,
-    spentByCategory,
-    totalSpent,
-    leftover,
-    spendPct,
-    leftoverPositive,
-    barColor,
-    pastNames,
-  } = buildBudgetSummary(data, month, year);
 
   const mostRecentImportedTransactionLabel = transactions
     .filter(
@@ -320,6 +425,12 @@ export default function BudgetApp() {
       setLastCategoryId("");
       setImportRows(null);
       setImportError("");
+      setAuthCycleReady(false);
+      setCategoryAlertItems([]);
+      setCategoryAlertEvaluated(false);
+      setShouldShowCategoryAlert(false);
+      setBudgetLoaded(false);
+      authCycleRef.current = { userId: null, counted: false };
     } catch (error) {
       setAuthError(error.message || "Unable to sign out right now.");
       setSignOutPending(false);
@@ -913,6 +1024,12 @@ export default function BudgetApp() {
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
+        <CategoryAlertBanner
+          alerts={categoryAlertItems}
+          formatCurrency={formatCurrency}
+          onDismiss={() => setCategoryAlertItems([])}
+        />
+
         <SummaryCards
           editingIncome={editingIncome}
           expectedSurplus={expectedSurplus}

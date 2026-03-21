@@ -1,5 +1,11 @@
 import { C } from "../constants";
 
+const ALERT_CATEGORY_NAMES = new Set([
+  "groceries",
+  "miscellaneous (tp, shampoo etc)",
+  "gas",
+]);
+
 export function buildBudgetSummary(data, month = new Date().getMonth(), year = new Date().getFullYear()) {
   const income = parseFloat(data.income) || 0;
   const categories = data.categories || [];
@@ -51,6 +57,30 @@ export function buildBudgetSummary(data, month = new Date().getMonth(), year = n
     barColor,
     pastNames,
   };
+}
+
+export function getCategoryAlerts(categories, spentByCategory, thresholdPct = 85) {
+  return (categories || [])
+    .map((category) => {
+      const budget = parseFloat(category.amount) || 0;
+      const spent = spentByCategory?.[category.id] || 0;
+      const pctUsed = budget > 0 ? (spent / budget) * 100 : 0;
+
+      return {
+        id: category.id,
+        name: category.name,
+        budget,
+        spent,
+        pctUsed,
+      };
+    })
+    .filter(
+      (category) =>
+        ALERT_CATEGORY_NAMES.has(category.name.trim().toLowerCase()) &&
+        category.budget > 0 &&
+        category.pctUsed >= thresholdPct,
+    )
+    .sort((first, second) => second.pctUsed - first.pctUsed);
 }
 
 export function getCategoryById(categories, id) {

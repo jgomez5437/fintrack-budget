@@ -16,9 +16,13 @@ create table if not exists public.monthly_budgets (
 create table if not exists public.user_preferences (
   user_id uuid primary key references auth.users (id) on delete cascade,
   last_category_id text,
+  category_alert_auth_count integer not null default 0,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.user_preferences
+add column if not exists category_alert_auth_count integer not null default 0;
 
 create or replace function public.set_updated_at()
 returns trigger

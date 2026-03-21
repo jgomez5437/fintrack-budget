@@ -1,8 +1,18 @@
 import { defaultData } from "../constants";
 import { ensureSupabaseSession, getSupabase } from "./supabase";
 
-const LAST_CATEGORY_KEY = "fintrack-last-cat";
+export const LAST_CATEGORY_KEY = "fintrack-last-cat";
+export const CATEGORY_ALERT_COUNT_KEY = "fintrack-category-alert-count";
 const budgetKeyPattern = /^budget-(\d{1,2})-(\d{4})$/;
+const preferenceColumnsByKey = {
+  [LAST_CATEGORY_KEY]: "last_category_id",
+  [CATEGORY_ALERT_COUNT_KEY]: "category_alert_auth_count",
+};
+
+function isMissingPreferenceColumnError(error, columnName) {
+  const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+  return message.includes(columnName.toLowerCase()) && message.includes("column");
+}
 
 const browserStorage = {
   async get(key) {
@@ -76,15 +86,22 @@ function createSupabaseStorage() {
           return { value: JSON.stringify(normalizeBudgetRecord(data)) };
         }
 
-        if (key === LAST_CATEGORY_KEY) {
+        const preferenceColumn = preferenceColumnsByKey[key];
+        if (preferenceColumn) {
           const { data, error } = await supabase
             .from("user_preferences")
-            .select("last_category_id")
+            .select(preferenceColumn)
             .eq("user_id", userId)
             .maybeSingle();
 
-          if (error) throw error;
-          if (!data?.last_category_id) {
+          if (error) {
+            if (isMissingPreferenceColumnError(error, preferenceColumn)) {
+              return browserStorage.get(key);
+            }
+            throw error;
+          }
+          const value = data?.[preferenceColumn];
+          if (value === null || value === undefined || value === "") {
             const localValue = await loadLocalValue(key);
             if (localValue) {
               await this.set(key, localValue.value);
@@ -94,7 +111,7 @@ function createSupabaseStorage() {
             return null;
           }
 
-          return { value: String(data.last_category_id) };
+          return { value: String(value) };
         }
 
         return browserStorage.get(key);
@@ -143,18 +160,28 @@ function createSupabaseStorage() {
           return;
         }
 
-        if (key === LAST_CATEGORY_KEY) {
+        const preferenceColumn = preferenceColumnsByKey[key];
+        if (preferenceColumn) {
           const { error } = await supabase.from("user_preferences").upsert(
             {
               user_id: userId,
-              last_category_id: value,
+              [preferenceColumn]:
+                preferenceColumn === "category_alert_auth_count"
+                  ? Number.parseInt(value, 10) || 0
+                  : value,
             },
             {
               onConflict: "user_id",
             },
           );
 
-          if (error) throw error;
+          if (error) {
+            if (isMissingPreferenceColumnError(error, preferenceColumn)) {
+              await browserStorage.set(key, value);
+              return;
+            }
+            throw error;
+          }
           return;
         }
       } catch {
