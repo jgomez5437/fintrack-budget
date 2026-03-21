@@ -10,6 +10,7 @@ import { parseImportFile } from "./app/services/importTransactions";
 import { autoAssignImportCategory } from "./app/utils/importCategoryRules";
 import {
   CATEGORY_ALERT_COUNT_KEY,
+  FIRST_NAME_KEY,
   getStorage,
 } from "./app/services/storage";
 import {
@@ -35,6 +36,7 @@ import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
 import AddCategoryModal from "./app/components/AddCategoryModal";
 import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
 import SkeletonDashboard from "./app/components/SkeletonDashboard";
+import NamePromptModal from "./app/components/NamePromptModal";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -78,6 +80,8 @@ export default function BudgetApp() {
   const [signOutPending, setSignOutPending] = useState(false);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+  const [firstName, setFirstName] = useState("");
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [data, setData] = useState(() => defaultData());
   const [newCat, setNewCat] = useState({ name: "", amount: "" });
   const [editingId, setEditingId] = useState(null);
@@ -229,6 +233,28 @@ export default function BudgetApp() {
 
     loadBudget();
   }, [authLoading, month, year, session, storage]);
+
+  useEffect(() => {
+    if (authLoading || !session) return;
+    let isMounted = true;
+    async function loadFirstName() {
+      try {
+        const result = await storage.get(FIRST_NAME_KEY);
+        if (!isMounted) return;
+        
+        if (result && result.value) {
+          setFirstName(result.value);
+        } else {
+          setShowNamePrompt(true);
+        }
+      } catch {
+        if (!isMounted) return;
+        setShowNamePrompt(true);
+      }
+    }
+    loadFirstName();
+    return () => { isMounted = false; };
+  }, [authLoading, session, storage]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -602,6 +628,16 @@ export default function BudgetApp() {
 
   const cancelSavingsEdit = () => {
     setEditingSavings(false);
+  };
+
+  const saveFirstName = async (name) => {
+    setFirstName(name);
+    setShowNamePrompt(false);
+    try {
+      await storage.set(FIRST_NAME_KEY, name);
+    } catch (e) {
+      console.error("Failed to save name", e);
+    }
   };
 
   const prevMonth = () => {
@@ -1186,6 +1222,10 @@ export default function BudgetApp() {
     >
       <GlobalStyles />
 
+      {showNamePrompt && (
+        <NamePromptModal onSaveName={saveFirstName} />
+      )}
+
       {nextMonthPrompt && (
         <NextMonthPromptModal
           month={nextMonthPrompt.month}
@@ -1288,6 +1328,18 @@ export default function BudgetApp() {
           formatCurrency={formatCurrency}
           onDismiss={() => setCategoryAlertItems([])}
         />
+
+        {firstName && (
+          <div className="fade-up" style={{
+            fontSize: "26px",
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: "24px",
+            fontFamily: "'Playfair Display', serif"
+          }}>
+            Welcome, {firstName}
+          </div>
+        )}
 
         <SummaryCards
           editingIncome={editingIncome}

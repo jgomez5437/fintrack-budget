@@ -3,10 +3,12 @@ import { ensureSupabaseSession, getSupabase } from "./supabase";
 
 export const LAST_CATEGORY_KEY = "fintrack-last-cat";
 export const CATEGORY_ALERT_COUNT_KEY = "fintrack-category-alert-count";
+export const FIRST_NAME_KEY = "fintrack-first-name";
 const budgetKeyPattern = /^budget-(\d{1,2})-(\d{4})$/;
 const preferenceColumnsByKey = {
   [LAST_CATEGORY_KEY]: "last_category_id",
   [CATEGORY_ALERT_COUNT_KEY]: "category_alert_auth_count",
+  [FIRST_NAME_KEY]: "first_name",
 };
 
 function isMissingPreferenceColumnError(error, columnName) {
