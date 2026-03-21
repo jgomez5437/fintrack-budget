@@ -123,6 +123,7 @@ export default function BudgetApp() {
   const inlineNameRef = useRef(null);
   const quickNameRef = useRef(null);
   const fileInputRef = useRef(null);
+  const tabSwitcherRef = useRef(null);
   const authCycleRef = useRef({ userId: null, counted: false });
   const uncategorizedSuccessTimeoutRef = useRef(null);
 
@@ -1300,7 +1301,20 @@ export default function BudgetApp() {
           onCancelSavingsEdit={cancelSavingsEdit}
         />
 
-        <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
+        <div ref={tabSwitcherRef} style={{ scrollMarginTop: "24px" }}>
+          <TabSwitcher 
+            activeTab={activeTab} 
+            onTabChange={(key) => {
+              setActiveTab(key);
+              setTimeout(() => {
+                tabSwitcherRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }, 50);
+            }} 
+          />
+        </div>
 
         {activeTab === "budget" && (
           <BudgetTab
