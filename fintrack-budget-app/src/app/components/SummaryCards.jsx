@@ -9,11 +9,11 @@ export default function SummaryCards({
   incomeRef,
   leftover,
   leftoverPositive,
-  mostMoneySpentCategory,
   onStartIncomeEdit,
   onIncomeInputChange,
   onSaveIncome,
   onCancelIncomeEdit,
+  projectedMonthEndSpent,
   totalPlanned,
   totalSpent,
   transactionCount,
@@ -282,21 +282,24 @@ export default function SummaryCards({
             fontWeight: 600,
           }}
         >
-          MOST MONEY SPENT
+          PROJECTED END-OF-MONTH
         </div>
         <div
           style={{
-            fontSize: mostMoneySpentCategory ? "24px" : "18px",
+            fontSize: "24px",
             fontWeight: 700,
-            color: mostMoneySpentCategory ? C.text : C.textMid,
+            color: C.text,
             letterSpacing: "-0.3px",
             lineHeight: 1.15,
           }}
         >
-          {mostMoneySpentCategory || "None yet"}
+          ${formatCurrency(projectedMonthEndSpent)}
         </div>
         <div style={{ fontSize: "12px", color: C.textLight, marginTop: "4px" }}>
-          Category
+          Current Pace Forecast
+        </div>
+        <div style={{ fontSize: "11px", color: C.textLight, marginTop: "6px" }}>
+          ${formatCurrency(totalSpent)} spent so far
         </div>
       </div>
     </div>

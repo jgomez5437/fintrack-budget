@@ -228,7 +228,7 @@ export default function BudgetApp() {
     expectedSurplus,
     expectedSurplusPositive,
     income,
-    mostMoneySpentCategory,
+    projectedMonthEndSpent,
     totalPlanned,
     transactions,
     spentByCategory,
@@ -238,7 +238,7 @@ export default function BudgetApp() {
     leftoverPositive,
     barColor,
     pastNames,
-  } = buildBudgetSummary(data);
+  } = buildBudgetSummary(data, month, year);
 
   const mostRecentImportedTransactionLabel = transactions
     .filter(
@@ -922,11 +922,11 @@ export default function BudgetApp() {
           incomeRef={incomeRef}
           leftover={leftover}
           leftoverPositive={leftoverPositive}
-          mostMoneySpentCategory={mostMoneySpentCategory}
           onStartIncomeEdit={startIncomeEdit}
           onIncomeInputChange={setIncomeInput}
           onSaveIncome={saveIncome}
           onCancelIncomeEdit={cancelIncomeEdit}
+          projectedMonthEndSpent={projectedMonthEndSpent}
           totalPlanned={totalPlanned}
           totalSpent={totalSpent}
           transactionCount={transactions.length}

@@ -1,6 +1,6 @@
 import { C } from "../constants";
 
-export function buildBudgetSummary(data) {
+export function buildBudgetSummary(data, month = new Date().getMonth(), year = new Date().getFullYear()) {
   const income = parseFloat(data.income) || 0;
   const categories = data.categories || [];
   const transactions = data.transactions || [];
@@ -22,18 +22,19 @@ export function buildBudgetSummary(data) {
   );
   const leftover = totalPlanned - totalSpent;
   const expectedSurplus = income - totalSpent;
+  const now = new Date();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const isCurrentMonth = now.getMonth() === month && now.getFullYear() === year;
+  const isPastMonth =
+    year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth());
+  const elapsedDays = isPastMonth ? daysInMonth : isCurrentMonth ? now.getDate() : 0;
+  const projectedMonthEndSpent =
+    elapsedDays > 0 ? (totalSpent / elapsedDays) * daysInMonth : 0;
   const spendPct = income > 0 ? Math.min((totalSpent / income) * 100, 100) : 0;
   const leftoverPositive = leftover >= 0;
   const expectedSurplusPositive = expectedSurplus >= 0;
   const barColor = spendPct > 90 ? C.red : spendPct > 70 ? C.orange : C.green;
   const pastNames = [...new Set(transactions.map((transaction) => transaction.name))];
-  const mostMoneySpentCategory = categories
-    .filter((category) => category.name?.trim().toLowerCase() !== "rent")
-    .map((category) => ({
-      name: category.name,
-      spent: spentByCategory[category.id] || 0,
-    }))
-    .sort((a, b) => b.spent - a.spent)[0];
 
   return {
     income,
@@ -43,12 +44,12 @@ export function buildBudgetSummary(data) {
     totalSpent,
     leftover,
     expectedSurplus,
+    projectedMonthEndSpent,
     spendPct,
     leftoverPositive,
     expectedSurplusPositive,
     barColor,
     pastNames,
-    mostMoneySpentCategory: mostMoneySpentCategory?.spent > 0 ? mostMoneySpentCategory.name : null,
   };
 }
 
