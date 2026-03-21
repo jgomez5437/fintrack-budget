@@ -34,6 +34,7 @@ import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
 import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
 import AddCategoryModal from "./app/components/AddCategoryModal";
 import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
+import SkeletonDashboard from "./app/components/SkeletonDashboard";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -1214,7 +1215,11 @@ export default function BudgetApp() {
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
-        {showUncategorizedAlert && (
+        {!budgetLoaded ? (
+          <SkeletonDashboard />
+        ) : (
+          <>
+            {showUncategorizedAlert && (
           <div
             className="fade-up"
             style={{
@@ -1386,6 +1391,8 @@ export default function BudgetApp() {
             onDeleteBill={deleteBill}
             formatCurrency={formatCurrency}
           />
+        )}
+          </>
         )}
       </div>
     </div>

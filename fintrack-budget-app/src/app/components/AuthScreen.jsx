@@ -49,26 +49,26 @@ export default function AuthScreen({ onSignIn, onSignUp, isLoading, authError })
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(30,80,212,0.18), transparent 35%), linear-gradient(180deg, #f4f7ff 0%, #edf3ff 100%)",
-        fontFamily: "'DM Sans', sans-serif",
-        color: C.text,
-        display: "grid",
-        placeItems: "center",
-        padding: "24px",
+      <div
+        style={{
+          minHeight: "100vh",
+          background: C.bg,
+          backgroundImage: "radial-gradient(circle at top, rgba(30,80,212,0.12), transparent 45%)",
+          fontFamily: "'DM Sans', sans-serif",
+          color: C.text,
+          display: "grid",
+          placeItems: "center",
+          padding: "24px",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "460px",
-          background: "rgba(255,255,255,0.94)",
+          background: C.surface,
           border: `1px solid ${C.border}`,
           borderRadius: "28px",
-          boxShadow: "0 24px 80px rgba(15,28,77,0.12)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
           overflow: "hidden",
         }}
       >
