@@ -125,177 +125,178 @@ export default function BudgetTab({
                   cursor: "pointer",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    marginBottom: "10px",
-                  }}
-                >
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      fontSize: "15px",
-                      fontWeight: 600,
-                      color: C.text,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {category.name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "15px",
-                      fontWeight: 700,
-                      color: C.text,
-                      flexShrink: 0,
-                    }}
-                  >
-                    ${formatCurrency(budget)}
-                  </div>
-                  <button
-                    className="cat-add-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      inlineCatId === category.id
-                        ? onCloseInline()
-                        : onOpenInline(category.id);
-                    }}
-                    title={`Add to ${category.name}`}
-                    style={{
-                      flexShrink: 0,
-                      background:
-                        inlineCatId === category.id ? C.gold : C.goldLight,
-                      border: `1.5px solid ${
-                        inlineCatId === category.id ? C.gold : "#f5d68a"
-                      }`,
-                      color:
-                        inlineCatId === category.id ? C.white : C.goldDark,
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "7px",
-                      cursor: "pointer",
-                      fontSize: "18px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      lineHeight: 1,
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {inlineCatId === category.id ? "x" : "+"}
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDeleteCategory(category);
-                    }}
-                    title={`Delete ${category.name}`}
-                    aria-label={`Delete ${category.name}`}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: C.textLight,
-                      cursor: "pointer",
-                      padding: "4px 6px",
-                      borderRadius: "5px",
-                      transition: "color 0.15s",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M4 7H20"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
+                    <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke={C.border}
+                        strokeWidth="4"
                       />
-                      <path
-                        d="M9 3H15"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke={categoryBarColor}
+                        strokeWidth="4"
                         strokeLinecap="round"
-                      />
-                      <path
-                        d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M10 11V17"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M14 11V17"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
+                        strokeDasharray={113.1}
+                        strokeDashoffset={113.1 - (Math.min(categoryPct, 100) / 100) * 113.1}
+                        style={{ transition: "stroke-dashoffset 0.5s ease-in-out" }}
                       />
                     </svg>
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "6px",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "12px", color: C.textLight }}>
-                    spent{" "}
-                    <span style={{ color: C.textMid, fontWeight: 600 }}>
-                      ${formatCurrency(spent)}
-                    </span>
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: remainingColor,
+                    <div style={{
+                      position: "absolute",
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "11px",
                       fontWeight: 700,
-                    }}
-                  >
-                    {remaining >= 0
-                      ? `$${formatCurrency(remaining)} left`
-                      : `$${formatCurrency(Math.abs(remaining))} over`}
-                  </span>
-                </div>
+                      color: categoryBarColor,
+                    }}>
+                      {Math.round(categoryPct)}%
+                    </div>
+                  </div>
 
-                <div
-                  style={{
-                    background: C.border,
-                    borderRadius: "4px",
-                    height: "5px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="mini-bar-fill"
-                    style={{
-                      width: `${categoryPct}%`,
-                      height: "100%",
-                      background: categoryBarColor,
-                      borderRadius: "4px",
-                    }}
-                  />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: C.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {category.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: C.text,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ${formatCurrency(budget)}
+                      </div>
+                      <button
+                        className="cat-add-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          inlineCatId === category.id
+                            ? onCloseInline()
+                            : onOpenInline(category.id);
+                        }}
+                        title={`Add to ${category.name}`}
+                        style={{
+                          flexShrink: 0,
+                          background:
+                            inlineCatId === category.id ? C.gold : C.goldLight,
+                          border: `1.5px solid ${
+                            inlineCatId === category.id ? C.gold : "#f5d68a"
+                          }`,
+                          color: inlineCatId === category.id ? C.white : C.goldDark,
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "7px",
+                          cursor: "pointer",
+                          fontSize: "18px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1,
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {inlineCatId === category.id ? "x" : "+"}
+                      </button>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDeleteCategory(category);
+                        }}
+                        title={`Delete ${category.name}`}
+                        aria-label={`Delete ${category.name}`}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: C.textLight,
+                          cursor: "pointer",
+                          padding: "4px 6px",
+                          borderRadius: "5px",
+                          transition: "color 0.15s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 7H20"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M9 3H15"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M10 11V17"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M14 11V17"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "12px", color: C.textLight }}>
+                        spent{" "}
+                        <span style={{ color: C.textMid, fontWeight: 600 }}>
+                          ${formatCurrency(spent)}
+                        </span>
+                      </span>
+                      <span style={{ fontSize: "12px", color: remainingColor, fontWeight: 700 }}>
+                        {remaining >= 0
+                          ? `$${formatCurrency(remaining)} left`
+                          : `$${formatCurrency(Math.abs(remaining))} over`}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {inlineCatId === category.id && (
