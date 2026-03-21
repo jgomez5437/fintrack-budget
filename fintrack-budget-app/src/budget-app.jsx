@@ -236,6 +236,14 @@ export default function BudgetApp() {
     pastNames,
   } = buildBudgetSummary(data);
 
+  const mostRecentImportedTransactionLabel = transactions
+    .filter(
+      (transaction) =>
+        transaction.importSource === "excel" &&
+        Number.isFinite(transaction.importDateValue),
+    )
+    .sort((a, b) => b.importDateValue - a.importDateValue)[0]?.date;
+
   useEffect(() => {
     setSelectedTransactionIds((currentIds) =>
       currentIds.filter((id) => transactions.some((transaction) => transaction.id === id)),
@@ -755,6 +763,8 @@ export default function BudgetApp() {
         amount: row.amount,
         categoryId: row.categoryId ? parseInt(row.categoryId, 10) : null,
         date: row.date,
+        importSource: "excel",
+        importDateValue: row.importDateValue,
       }));
 
     update({ ...data, transactions: [...transactionsToAdd, ...transactions] });
@@ -971,6 +981,7 @@ export default function BudgetApp() {
             getCategoryById={(id) => getCategoryById(data.categories, id)}
             importError={importError}
             isImportDragActive={isImportDragActive}
+            mostRecentImportedTransactionLabel={mostRecentImportedTransactionLabel}
             fileInputRef={fileInputRef}
             showTxForm={showTxForm}
             newTx={newTx}

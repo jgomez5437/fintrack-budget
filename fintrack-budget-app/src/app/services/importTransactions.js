@@ -31,19 +31,28 @@ function parseExcelSerialDate(value) {
   return parsedDate;
 }
 
+function buildDateInfo(date) {
+  return {
+    label: formatImportDate(date),
+    sortValue: date.getTime(),
+  };
+}
+
 function parseTransactionDate(rawDate) {
   if (rawDate instanceof Date && !Number.isNaN(rawDate.getTime())) {
-    return formatImportDate(rawDate);
+    return buildDateInfo(rawDate);
   }
 
   if (typeof rawDate === "number" && Number.isFinite(rawDate)) {
     const parsedDate = parseExcelSerialDate(rawDate);
-    return parsedDate ? formatImportDate(parsedDate) : todayLabel();
+    return parsedDate
+      ? buildDateInfo(parsedDate)
+      : { label: todayLabel(), sortValue: Date.now() };
   }
 
   if (typeof rawDate === "string") {
     const value = rawDate.trim();
-    if (!value) return todayLabel();
+    if (!value) return { label: todayLabel(), sortValue: Date.now() };
 
     const matchedDate = value.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
     if (matchedDate) {
@@ -55,17 +64,17 @@ function parseTransactionDate(rawDate) {
       const parsedDate = new Date(year, month, day);
 
       if (!Number.isNaN(parsedDate.getTime())) {
-        return formatImportDate(parsedDate);
+        return buildDateInfo(parsedDate);
       }
     }
 
     const parsedDate = new Date(value);
     if (!Number.isNaN(parsedDate.getTime())) {
-      return formatImportDate(parsedDate);
+      return buildDateInfo(parsedDate);
     }
   }
 
-  return todayLabel();
+  return { label: todayLabel(), sortValue: Date.now() };
 }
 
 export function parseImportFile(file) {
@@ -96,6 +105,7 @@ export function parseImportFile(file) {
 
           const amount = parseFloat(String(rawAmount).replace(/[^0-9.\-]/g, ""));
           if (Number.isNaN(amount) || amount >= 0) continue;
+          const parsedDate = parseTransactionDate(rawDate);
 
           parsedRows.push({
             id: Date.now() + Math.random(),
@@ -103,7 +113,8 @@ export function parseImportFile(file) {
             rawDesc: String(rawDesc),
             amount: Math.abs(amount).toFixed(2),
             categoryId: "",
-            date: parseTransactionDate(rawDate),
+            date: parsedDate.label,
+            importDateValue: parsedDate.sortValue,
             include: true,
           });
         }

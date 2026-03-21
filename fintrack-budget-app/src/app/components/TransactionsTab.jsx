@@ -12,6 +12,7 @@ export default function TransactionsTab({
   getCategoryById,
   importError,
   isImportDragActive,
+  mostRecentImportedTransactionLabel,
   fileInputRef,
   showTxForm,
   newTx,
@@ -216,6 +217,24 @@ export default function TransactionsTab({
               </span>
             </div>
           )}
+        </div>
+      )}
+
+      {mostRecentImportedTransactionLabel && (
+        <div
+          style={{
+            marginBottom: "16px",
+            padding: "12px 14px",
+            background: C.white,
+            border: `1.5px solid ${C.border}`,
+            borderRadius: "10px",
+            boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+            fontSize: "13px",
+            color: C.textMid,
+            fontWeight: 600,
+          }}
+        >
+          Most Recent Transactions: {mostRecentImportedTransactionLabel}
         </div>
       )}
 
