@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { C } from "../constants";
 import CategoryEditModal from "./CategoryEditModal";
 import { inputStyle } from "../styles";
@@ -28,66 +29,152 @@ export default function BudgetTab({
   onReorderCategories,
 }) {
   const activeEditCategory = categories.find((category) => category.id === editingId);
-  const dragIndexRef = useRef(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
 
-  // ── Desktop DnD ──
-  const handleDragStart = (index) => {
-    dragIndexRef.current = index;
-  };
-  const handleDragOver = (event, index) => {
-    event.preventDefault();
-    setDragOverIndex(index);
-  };
-  const handleDrop = (index) => {
-    const from = dragIndexRef.current;
-    if (from === null || from === index) { setDragOverIndex(null); return; }
-    const reordered = [...categories];
-    const [removed] = reordered.splice(from, 1);
-    reordered.splice(index, 0, removed);
-    onReorderCategories(reordered);
-    dragIndexRef.current = null;
-    setDragOverIndex(null);
-  };
-  const handleDragEnd = () => {
-    dragIndexRef.current = null;
-    setDragOverIndex(null);
-  };
+  // ── Drag State ──
+  const [dragIndex, setDragIndex] = useState(null);
+  const [dropIndex, setDropIndex] = useState(null);
+  const [ghostStyle, setGhostStyle] = useState(null);
 
-  // ── Touch / Pointer DnD ──
-  const pointerStartY = useRef(null);
-  const pointerStartIndex = useRef(null);
+  const dragStateRef = useRef({
+    active: false,
+    fromIndex: null,
+    startY: 0,
+    startX: 0,
+    offsetY: 0,
+    offsetX: 0,
+    currentY: 0,
+    ghostHeight: 0,
+    scrollRAF: null,
+  });
 
-  const handlePointerDown = (event, index) => {
-    // Only activate on the handle itself
-    event.stopPropagation();
-    pointerStartY.current = event.clientY;
-    pointerStartIndex.current = index;
-    dragIndexRef.current = index;
-  };
+  const listRef = useRef(null);
 
-  const handlePointerMove = (event) => {
-    if (dragIndexRef.current === null) return;
-    const rows = document.querySelectorAll(".cat-drag-row");
-    let closest = null;
-    let closestDist = Infinity;
-    rows.forEach((row, i) => {
-      const rect = row.getBoundingClientRect();
-      const mid = rect.top + rect.height / 2;
-      const dist = Math.abs(event.clientY - mid);
-      if (dist < closestDist) { closestDist = dist; closest = i; }
-    });
-    if (closest !== null) setDragOverIndex(closest);
-  };
+  const getRowEls = useCallback(() =>
+    listRef.current ? Array.from(listRef.current.querySelectorAll(".cat-drag-row")) : [],
+  []);
 
-  const handlePointerUp = () => {
-    if (dragIndexRef.current !== null && dragOverIndex !== null) {
-      handleDrop(dragOverIndex);
-    } else {
-      dragIndexRef.current = null;
-      setDragOverIndex(null);
+  const computeDropIndex = useCallback((clientY) => {
+    const rows = getRowEls();
+    let best = rows.length - 1;
+    for (let i = 0; i < rows.length; i++) {
+      const rect = rows[i].getBoundingClientRect();
+      if (clientY < rect.top + rect.height / 2) { best = i; break; }
     }
-  };
+    return best;
+  }, [getRowEls]);
+
+  const stopAutoScroll = useCallback(() => {
+    if (dragStateRef.current.scrollRAF) {
+      cancelAnimationFrame(dragStateRef.current.scrollRAF);
+      dragStateRef.current.scrollRAF = null;
+    }
+  }, []);
+
+  const startAutoScroll = useCallback((clientY) => {
+    stopAutoScroll();
+    const EDGE = 80; // px from viewport edge
+    const MAX_SPEED = 18;
+
+    const tick = () => {
+      if (!dragStateRef.current.active) return;
+      const vy = clientY;
+      const winH = window.innerHeight;
+      let speed = 0;
+      if (vy < EDGE) speed = -MAX_SPEED * (1 - vy / EDGE);
+      else if (vy > winH - EDGE) speed = MAX_SPEED * ((vy - (winH - EDGE)) / EDGE);
+
+      if (speed !== 0) {
+        window.scrollBy({ top: speed });
+        // Update ghost position with scroll delta
+        dragStateRef.current.currentY += speed;
+        setGhostStyle((prev) => prev ? { ...prev, top: dragStateRef.current.currentY } : prev);
+      }
+      dragStateRef.current.scrollRAF = requestAnimationFrame(tick);
+    };
+    dragStateRef.current.scrollRAF = requestAnimationFrame(tick);
+  }, [stopAutoScroll]);
+
+  const handlePointerDown = useCallback((event, index) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const rows = getRowEls();
+    const row = rows[index];
+    if (!row) return;
+
+    const rect = row.getBoundingClientRect();
+    const state = dragStateRef.current;
+    state.active = true;
+    state.fromIndex = index;
+    state.startY = event.clientY;
+    state.startX = event.clientX;
+    state.offsetY = event.clientY - rect.top;
+    state.offsetX = event.clientX - rect.left;
+    state.currentY = event.clientY - state.offsetY + window.scrollY;
+    state.ghostHeight = rect.height;
+
+    setDragIndex(index);
+    setDropIndex(index);
+    setGhostStyle({
+      top: event.clientY - state.offsetY + window.scrollY,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    });
+  }, [getRowEls]);
+
+  useEffect(() => {
+    if (dragIndex === null) return;
+
+    const onMove = (event) => {
+      if (!dragStateRef.current.active) return;
+      const clientY = event.clientY ?? event.touches?.[0]?.clientY;
+      const clientX = event.clientX ?? event.touches?.[0]?.clientX;
+      if (clientY === undefined) return;
+
+      const state = dragStateRef.current;
+      state.currentY = clientY - state.offsetY + window.scrollY;
+
+      setGhostStyle((prev) => prev ? {
+        ...prev,
+        top: state.currentY,
+        left: (clientX ?? event.clientX) - state.offsetX,
+      } : prev);
+
+      setDropIndex(computeDropIndex(clientY));
+      startAutoScroll(clientY);
+    };
+
+    const onUp = () => {
+      const state = dragStateRef.current;
+      if (!state.active) return;
+      state.active = false;
+      stopAutoScroll();
+
+      setGhostStyle(null);
+      setDropIndex((di) => {
+        if (di !== null && di !== state.fromIndex) {
+          const reordered = [...categories];
+          const [removed] = reordered.splice(state.fromIndex, 1);
+          reordered.splice(di, 0, removed);
+          onReorderCategories(reordered);
+        }
+        return null;
+      });
+      setDragIndex(null);
+    };
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      stopAutoScroll();
+    };
+  }, [dragIndex, categories, computeDropIndex, startAutoScroll, stopAutoScroll, onReorderCategories]);
+
 
   return (
     <div className="fade-up">
@@ -135,12 +222,14 @@ export default function BudgetTab({
 
       {categories.length > 0 && (
         <div
+          ref={listRef}
           style={{
             marginBottom: "16px",
             borderRadius: "12px",
             overflow: "hidden",
             border: `1.5px solid ${C.border}`,
             boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+            userSelect: "none",
           }}
         >
           {categories.map((category, index) => {
@@ -159,32 +248,25 @@ export default function BudgetTab({
                 ? C.orange
                 : C.green;
 
+            const isDragging = dragIndex === index;
+            const isDropTarget = dropIndex === index && dragIndex !== null && dragIndex !== index;
+
             return (
               <div
                 key={category.id}
                 className="cat-row cat-drag-row"
-                onClick={() => onStartEdit(category)}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={() => handleDrop(index)}
-                onDragEnd={handleDragEnd}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
+                onClick={() => { if (dragIndex === null) onStartEdit(category); }}
                 style={{
                   padding: "14px 18px 14px 8px",
-                  background: dragOverIndex === index
-                    ? C.blueLight
-                    : index % 2 === 0 ? C.surface : C.surfaceAlt,
-                  borderBottom:
-                    index < categories.length - 1
-                      ? `1px solid ${C.border}`
-                      : "none",
-                  transition: "background 0.15s",
-                  animation: `fadeUp 0.25s ease ${index * 0.04}s both`,
-                  cursor: "pointer",
-                  outline: dragOverIndex === index ? `2px solid ${C.blue}` : "none",
+                  background: isDropTarget ? C.blueLight : index % 2 === 0 ? C.surface : C.surfaceAlt,
+                  borderBottom: index < categories.length - 1 ? `1px solid ${C.border}` : "none",
+                  transition: "background 0.15s, opacity 0.15s, transform 0.15s",
+                  animation: dragIndex === null ? `fadeUp 0.25s ease ${index * 0.04}s both` : "none",
+                  cursor: isDragging ? "grabbing" : "pointer",
+                  opacity: isDragging ? 0.35 : 1,
+                  outline: isDropTarget ? `2px solid ${C.blue}` : "none",
                   outlineOffset: "-2px",
+                  position: "relative",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -193,11 +275,13 @@ export default function BudgetTab({
                     style={{
                       flexShrink: 0,
                       color: C.textLight,
-                      cursor: "grab",
-                      padding: "4px 4px",
+                      cursor: isDragging ? "grabbing" : "grab",
+                      padding: "6px 4px",
                       display: "flex",
                       alignItems: "center",
                       touchAction: "none",
+                      opacity: 0.5,
+                      transition: "opacity 0.15s",
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
                     onClick={(e) => e.stopPropagation()}
@@ -535,6 +619,83 @@ export default function BudgetTab({
           No categories yet - add one above
         </div>
       )}
+
+      {/* Ghost card — floats under finger/cursor while dragging */}
+      {ghostStyle && dragIndex !== null &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            style={{
+              position: "absolute",
+              top: ghostStyle.top,
+              left: ghostStyle.left,
+              width: ghostStyle.width,
+              height: ghostStyle.height,
+              zIndex: 9999,
+              pointerEvents: "none",
+              transform: "rotate(1.5deg) scale(1.03)",
+              transformOrigin: "top left",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.25), 0 6px 20px rgba(30,80,212,0.15)",
+              borderRadius: "10px",
+              border: `2px solid ${C.blue}`,
+              overflow: "hidden",
+              background: C.surface,
+              opacity: 0.97,
+              transition: "box-shadow 0.15s",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "14px 18px 14px 8px",
+                height: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              {/* Handle */}
+              <div style={{ flexShrink: 0, padding: "6px 4px", color: C.blue, display: "flex", alignItems: "center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: 1, minWidth: 0 }}>
+                {/* Circular progress ring */}
+                {(() => {
+                  const cat = categories[dragIndex];
+                  const budget = parseFloat(cat?.amount) || 0;
+                  const spent = spentByCategory[cat?.id] || 0;
+                  const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                  const barColor = pct > 90 ? C.red : pct > 70 ? C.orange : C.blue;
+                  return (
+                    <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
+                      <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
+                        <circle cx="22" cy="22" r="18" fill="none" stroke={C.border} strokeWidth="4"/>
+                        <circle cx="22" cy="22" r="18" fill="none" stroke={barColor} strokeWidth="4" strokeLinecap="round"
+                          strokeDasharray={113.1} strokeDashoffset={113.1 - (pct / 100) * 113.1}/>
+                      </svg>
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: barColor }}>
+                        {Math.round(pct)}%
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {categories[dragIndex]?.name}
+                  </div>
+                  <div style={{ fontSize: "13px", color: C.textLight, marginTop: "2px" }}>
+                    ${formatCurrency(parseFloat(categories[dragIndex]?.amount) || 0)} budget
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }
