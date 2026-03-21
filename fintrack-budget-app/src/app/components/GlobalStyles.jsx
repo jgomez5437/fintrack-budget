@@ -138,12 +138,17 @@ export default function GlobalStyles() {
       .mini-bar-fill { transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
       
       @media (max-width: 768px) {
+        .hide-chk-mobile { display: none !important; }
+        .show-btn-mobile { display: block !important; }
         .desktop-email-pill { display: none; }
         .import-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .import-table-row { min-width: 0; }
         .import-review-grid { grid-template-columns: 28px minmax(0, 1.8fr) minmax(88px, auto) minmax(0, 1.1fr) 24px; gap: 6px; }
         .tx-bulk-actions { width: 100%; flex-direction: column; align-items: stretch !important; }
         .tx-bulk-buttons { display: grid !important; grid-template-columns: 1fr 1fr; width: 100%; }
+      }
+      @media (min-width: 769px) {
+        .show-btn-mobile { display: none !important; }
       }
     `}</style>
   );

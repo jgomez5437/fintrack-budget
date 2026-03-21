@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { C } from "../constants";
 import TransactionDetailsModal from "./TransactionDetailsModal";
 import { inputStyle, selectStyle } from "../styles";
@@ -35,6 +35,7 @@ export default function TransactionsTab({
   onDeleteTransaction,
   onToggleTransactionSelection,
   onToggleAllTransactions,
+  onClearSelections,
   onDeleteSelectedTransactions,
   onUpdateTransactionCategory,
   onAssignSelectedTransactions,
@@ -49,6 +50,44 @@ export default function TransactionsTab({
   const [activeTransaction, setActiveTransaction] = useState(null);
   const [activeCategoryId, setActiveCategoryId] = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState("__none__");
+  const [isMobileSelectionMode, setIsMobileSelectionMode] = useState(false);
+  const isSelectionMode = isMobileSelectionMode || selectedCount > 0;
+  const longPressTimerRef = useRef(null);
+  const hasLongPressedRef = useRef(false);
+
+  const startLongPress = (id) => {
+    hasLongPressedRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      hasLongPressedRef.current = true;
+      setIsMobileSelectionMode(true);
+      if (!selectedTransactionIds.includes(id)) {
+        onToggleTransactionSelection(id);
+      }
+      if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
+    }, 450);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const cancelSelectionMode = () => {
+    setIsMobileSelectionMode(false);
+    if (onClearSelections) onClearSelections();
+  };
+
+  const handleTransactionClick = (transaction) => {
+    if (hasLongPressedRef.current) {
+      hasLongPressedRef.current = false;
+      return;
+    }
+    openTransactionDetails(transaction);
+  };
 
   useEffect(() => {
     if (!activeTransaction) return;
@@ -575,8 +614,9 @@ export default function TransactionsTab({
               flexWrap: "wrap",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", flex: 1 }}>
               <label
+                className={!isSelectionMode ? "hide-chk-mobile" : ""}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -596,10 +636,53 @@ export default function TransactionsTab({
                 />
                 Select All
               </label>
-              <span style={{ fontSize: "13px", color: C.textLight, fontWeight: 600 }}>
+
+              {!isSelectionMode && (
+                <button
+                  className="show-btn-mobile"
+                  onClick={() => setIsMobileSelectionMode(true)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: C.text,
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    padding: 0,
+                    textAlign: "left"
+                  }}
+                >
+                  Select Transactions
+                </button>
+              )}
+
+              <span 
+                className={!isSelectionMode ? "hide-chk-mobile" : ""}
+                style={{ fontSize: "13px", color: C.textLight, fontWeight: 600 }}
+              >
                 {selectedCount} selected
               </span>
             </div>
+
+            {isSelectionMode && (
+              <button
+                className="show-btn-mobile"
+                onClick={cancelSelectionMode}
+                style={{
+                  background: C.redLight,
+                  border: "none",
+                  color: C.red,
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  marginLeft: "auto",
+                }}
+              >
+                Cancel
+              </button>
+            )}
 
             {selectedCount > 0 && (
               <div
@@ -676,6 +759,12 @@ export default function TransactionsTab({
                 <div
                   key={transaction.id}
                   className="tx-row"
+                  onTouchStart={() => startLongPress(transaction.id)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  onMouseDown={() => startLongPress(transaction.id)}
+                  onMouseUp={cancelLongPress}
+                  onMouseLeave={cancelLongPress}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -689,20 +778,27 @@ export default function TransactionsTab({
                     borderBottom:
                       index < transactions.length - 1 ? `1px solid ${C.border}` : "none",
                     transition: "background 0.15s",
+                    userSelect: "none",
+                    WebkitUserSelect: "none"
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => onToggleTransactionSelection(transaction.id)}
-                    aria-label={`Select ${transaction.name}`}
-                    className="modern-checkbox"
-                    style={{ cursor: "pointer", flexShrink: 0 }}
-                  />
+                  <div
+                    className={!isSelectionMode ? "hide-chk-mobile" : ""}
+                    style={{ flexShrink: 0, display: "flex" }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleTransactionSelection(transaction.id)}
+                      aria-label={`Select ${transaction.name}`}
+                      className="modern-checkbox"
+                      style={{ cursor: "pointer" }}
+                    />
+                  </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <button
-                      onClick={() => openTransactionDetails(transaction)}
+                      onClick={() => handleTransactionClick(transaction)}
                       style={{
                         background: "transparent",
                         border: "none",
@@ -732,7 +828,7 @@ export default function TransactionsTab({
                     >
                       {category ? (
                         <button
-                          onClick={() => openTransactionDetails(transaction)}
+                          onClick={() => handleTransactionClick(transaction)}
                           style={{
                             fontSize: "11px",
                             color: C.blue,
@@ -748,7 +844,7 @@ export default function TransactionsTab({
                         </button>
                       ) : (
                         <button
-                          onClick={() => openTransactionDetails(transaction)}
+                          onClick={() => handleTransactionClick(transaction)}
                           style={{
                             fontSize: "11px",
                             color: C.textLight,
@@ -763,7 +859,7 @@ export default function TransactionsTab({
                         </button>
                       )}
                       <button
-                        onClick={() => openTransactionDetails(transaction)}
+                        onClick={() => handleTransactionClick(transaction)}
                         style={{
                           fontSize: "11px",
                           color: C.textLight,

@@ -1460,6 +1460,7 @@ export default function BudgetApp() {
             onDeleteTransaction={deleteTransaction}
             onToggleTransactionSelection={toggleTransactionSelection}
             onToggleAllTransactions={toggleAllTransactions}
+            onClearSelections={() => setSelectedTransactionIds([])}
             onDeleteSelectedTransactions={deleteSelectedTransactions}
             onUpdateTransactionCategory={updateTransactionCategory}
             onAssignSelectedTransactions={assignSelectedTransactionsToCategory}
