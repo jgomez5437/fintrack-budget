@@ -103,6 +103,11 @@ export default function BudgetApp() {
   const [shouldShowCategoryAlert, setShouldShowCategoryAlert] = useState(false);
   const [categoryAlertItems, setCategoryAlertItems] = useState([]);
   const [categoryAlertEvaluated, setCategoryAlertEvaluated] = useState(false);
+  const [showUncategorizedAlert, setShowUncategorizedAlert] = useState(false);
+  const [uncategorizedAlertEvaluated, setUncategorizedAlertEvaluated] = useState(false);
+  const [showUncategorizedSection, setShowUncategorizedSection] = useState(false);
+  const [uncategorizedAssignments, setUncategorizedAssignments] = useState({});
+  const [uncategorizedSaveSuccess, setUncategorizedSaveSuccess] = useState(false);
 
   const incomeRef = useRef(null);
   const nameInputRef = useRef(null);
@@ -110,6 +115,7 @@ export default function BudgetApp() {
   const quickNameRef = useRef(null);
   const fileInputRef = useRef(null);
   const authCycleRef = useRef({ userId: null, counted: false });
+  const uncategorizedSuccessTimeoutRef = useRef(null);
 
   const {
     expectedSurplus,
@@ -126,6 +132,9 @@ export default function BudgetApp() {
     barColor,
     pastNames,
   } = buildBudgetSummary(data, month, year);
+  const uncategorizedTransactions = transactions.filter(
+    (transaction) => transaction.categoryId === null || transaction.categoryId === undefined,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -206,11 +215,20 @@ export default function BudgetApp() {
     if (authLoading) return;
 
     if (!session) {
+      if (uncategorizedSuccessTimeoutRef.current) {
+        window.clearTimeout(uncategorizedSuccessTimeoutRef.current);
+        uncategorizedSuccessTimeoutRef.current = null;
+      }
       authCycleRef.current = { userId: null, counted: false };
       setAuthCycleReady(false);
       setShouldShowCategoryAlert(false);
       setCategoryAlertItems([]);
       setCategoryAlertEvaluated(false);
+      setShowUncategorizedAlert(false);
+      setUncategorizedAlertEvaluated(false);
+      setShowUncategorizedSection(false);
+      setUncategorizedAssignments({});
+      setUncategorizedSaveSuccess(false);
       return;
     }
 
@@ -241,9 +259,18 @@ export default function BudgetApp() {
         setShouldShowCategoryAlert(false);
       } finally {
         if (isActive) {
+          if (uncategorizedSuccessTimeoutRef.current) {
+            window.clearTimeout(uncategorizedSuccessTimeoutRef.current);
+            uncategorizedSuccessTimeoutRef.current = null;
+          }
           setAuthCycleReady(true);
           setCategoryAlertItems([]);
           setCategoryAlertEvaluated(false);
+          setShowUncategorizedAlert(false);
+          setUncategorizedAlertEvaluated(false);
+          setShowUncategorizedSection(false);
+          setUncategorizedAssignments({});
+          setUncategorizedSaveSuccess(false);
         }
       }
     }
@@ -284,6 +311,38 @@ export default function BudgetApp() {
     shouldShowCategoryAlert,
     spentByCategory,
   ]);
+
+  useEffect(() => {
+    if (
+      authLoading ||
+      !session ||
+      !budgetLoaded ||
+      !authCycleReady ||
+      uncategorizedAlertEvaluated
+    ) {
+      return;
+    }
+
+    setShowUncategorizedAlert(uncategorizedTransactions.length > 0);
+    setUncategorizedAlertEvaluated(true);
+  }, [
+    authLoading,
+    authCycleReady,
+    budgetLoaded,
+    session,
+    uncategorizedAlertEvaluated,
+    uncategorizedTransactions.length,
+  ]);
+
+  useEffect(() => {
+    if (uncategorizedTransactions.length > 0) return;
+
+    setShowUncategorizedAlert(false);
+
+    if (!uncategorizedSaveSuccess) {
+      setShowUncategorizedSection(false);
+    }
+  }, [uncategorizedSaveSuccess, uncategorizedTransactions.length]);
 
   useEffect(() => {
     if (authLoading || !session) return;
@@ -354,6 +413,14 @@ export default function BudgetApp() {
     .sort((a, b) => b.importDateValue - a.importDateValue)[0]?.date;
 
   useEffect(() => {
+    return () => {
+      if (uncategorizedSuccessTimeoutRef.current) {
+        window.clearTimeout(uncategorizedSuccessTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     setSelectedTransactionIds((currentIds) =>
       currentIds.filter((id) => transactions.some((transaction) => transaction.id === id)),
     );
@@ -421,6 +488,10 @@ export default function BudgetApp() {
 
     try {
       await signOutUser();
+      if (uncategorizedSuccessTimeoutRef.current) {
+        window.clearTimeout(uncategorizedSuccessTimeoutRef.current);
+        uncategorizedSuccessTimeoutRef.current = null;
+      }
       setData(defaultData());
       setLastCategoryId("");
       setImportRows(null);
@@ -429,6 +500,11 @@ export default function BudgetApp() {
       setCategoryAlertItems([]);
       setCategoryAlertEvaluated(false);
       setShouldShowCategoryAlert(false);
+      setShowUncategorizedAlert(false);
+      setUncategorizedAlertEvaluated(false);
+      setShowUncategorizedSection(false);
+      setUncategorizedAssignments({});
+      setUncategorizedSaveSuccess(false);
       setBudgetLoaded(false);
       authCycleRef.current = { userId: null, counted: false };
     } catch (error) {
@@ -665,6 +741,76 @@ export default function BudgetApp() {
     if (categoryId) {
       rememberCategory(categoryId);
     }
+  };
+
+  const updateUncategorizedAssignment = (transactionId, categoryId) => {
+    setUncategorizedAssignments((current) => ({
+      ...current,
+      [transactionId]: categoryId,
+    }));
+  };
+
+  const saveUncategorizedAssignments = () => {
+    const allAssigned = uncategorizedTransactions.every(
+      (transaction) => uncategorizedAssignments[transaction.id],
+    );
+
+    if (!allAssigned) return;
+
+    const assignments = uncategorizedTransactions
+      .map((transaction) => ({
+        transactionId: transaction.id,
+        categoryId: uncategorizedAssignments[transaction.id] || "",
+      }))
+      .filter((assignment) => assignment.categoryId);
+
+    const assignmentsByTransactionId = new Map(
+      assignments.map((assignment) => [
+        assignment.transactionId,
+        parseInt(assignment.categoryId, 10),
+      ]),
+    );
+
+    update({
+      ...data,
+      transactions: transactions.map((transaction) =>
+        assignmentsByTransactionId.has(transaction.id)
+          ? {
+              ...transaction,
+              categoryId: assignmentsByTransactionId.get(transaction.id),
+            }
+          : transaction,
+      ),
+    });
+
+    rememberCategory(assignments[assignments.length - 1].categoryId);
+    setShowUncategorizedAlert(false);
+    setUncategorizedAssignments({});
+    setUncategorizedSaveSuccess(true);
+
+    if (uncategorizedSuccessTimeoutRef.current) {
+      window.clearTimeout(uncategorizedSuccessTimeoutRef.current);
+    }
+
+    uncategorizedSuccessTimeoutRef.current = window.setTimeout(() => {
+      setShowUncategorizedSection(false);
+      setUncategorizedSaveSuccess(false);
+      uncategorizedSuccessTimeoutRef.current = null;
+    }, 1400);
+  };
+
+  const viewUncategorizedTransactions = () => {
+    setUncategorizedAssignments(
+      Object.fromEntries(
+        uncategorizedTransactions.map((transaction) => [
+          transaction.id,
+          transaction.categoryId?.toString() || "",
+        ]),
+      ),
+    );
+    setUncategorizedSaveSuccess(false);
+    setActiveTab("transactions");
+    setShowUncategorizedSection(true);
   };
 
   const assignSelectedTransactionsToCategory = (categoryId) => {
@@ -1024,6 +1170,51 @@ export default function BudgetApp() {
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
+        {showUncategorizedAlert && (
+          <div
+            className="fade-up"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              padding: "14px 16px",
+              marginBottom: "18px",
+              background: C.white,
+              border: `1.5px solid ${C.gold}`,
+              borderRadius: "14px",
+              boxShadow: "0 8px 24px rgba(245,166,35,0.12)",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>
+                You have uncategorized transactions
+              </div>
+              <div style={{ fontSize: "12px", color: C.textMid, marginTop: "2px" }}>
+                {uncategorizedTransactions.length} transaction
+                {uncategorizedTransactions.length === 1 ? "" : "s"} need a category.
+              </div>
+            </div>
+
+            <button
+              onClick={viewUncategorizedTransactions}
+              style={{
+                background: C.blue,
+                border: "none",
+                color: C.white,
+                padding: "10px 14px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 700,
+              }}
+            >
+              View Transactions
+            </button>
+          </div>
+        )}
+
         <CategoryAlertBanner
           alerts={categoryAlertItems}
           formatCurrency={formatCurrency}
@@ -1099,6 +1290,10 @@ export default function BudgetApp() {
           <TransactionsTab
             categories={data.categories}
             transactions={transactions}
+            uncategorizedTransactions={uncategorizedTransactions}
+            showUncategorizedSection={showUncategorizedSection}
+            uncategorizedAssignments={uncategorizedAssignments}
+            uncategorizedSaveSuccess={uncategorizedSaveSuccess}
             selectedTransactionIds={selectedTransactionIds}
             spentByCategory={spentByCategory}
             formatCurrency={formatCurrency}
@@ -1127,6 +1322,8 @@ export default function BudgetApp() {
             onDeleteSelectedTransactions={deleteSelectedTransactions}
             onUpdateTransactionCategory={updateTransactionCategory}
             onAssignSelectedTransactions={assignSelectedTransactionsToCategory}
+            onUncategorizedAssignmentChange={updateUncategorizedAssignment}
+            onSaveUncategorizedAssignments={saveUncategorizedAssignments}
           />
         )}
       </div>

@@ -6,6 +6,10 @@ import { inputStyle, selectStyle } from "../styles";
 export default function TransactionsTab({
   categories,
   transactions,
+  uncategorizedTransactions,
+  showUncategorizedSection,
+  uncategorizedAssignments,
+  uncategorizedSaveSuccess,
   selectedTransactionIds,
   spentByCategory,
   formatCurrency,
@@ -34,9 +38,14 @@ export default function TransactionsTab({
   onDeleteSelectedTransactions,
   onUpdateTransactionCategory,
   onAssignSelectedTransactions,
+  onUncategorizedAssignmentChange,
+  onSaveUncategorizedAssignments,
 }) {
   const selectedCount = selectedTransactionIds.length;
   const allSelected = transactions.length > 0 && selectedCount === transactions.length;
+  const allUncategorizedAssigned =
+    uncategorizedTransactions.length > 0 &&
+    uncategorizedTransactions.every((transaction) => uncategorizedAssignments[transaction.id]);
   const [activeTransaction, setActiveTransaction] = useState(null);
   const [activeCategoryId, setActiveCategoryId] = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState("__none__");
@@ -94,6 +103,148 @@ export default function TransactionsTab({
         />
       )}
 
+      {showUncategorizedSection && (
+        <div
+          className="fade-up"
+          style={{
+            position: "relative",
+            marginBottom: "20px",
+            background: C.white,
+            border: `1.5px solid ${uncategorizedSaveSuccess ? C.green : C.blueMid}`,
+            borderRadius: "18px",
+            padding: "18px",
+            boxShadow: uncategorizedSaveSuccess
+              ? "0 14px 30px rgba(22,163,74,0.18)"
+              : "0 8px 24px rgba(30,80,212,0.1)",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ marginBottom: "14px" }}>
+            <div
+              style={{
+                fontSize: "12px",
+                color: uncategorizedSaveSuccess ? C.green : C.textLight,
+                letterSpacing: "2px",
+                marginBottom: "6px",
+                fontWeight: 700,
+              }}
+            >
+              UNCATEGORIZED REVIEW
+            </div>
+            <div style={{ fontSize: "20px", fontWeight: 700, color: C.text }}>
+              Assign categories to these transactions
+            </div>
+            <div style={{ fontSize: "13px", color: C.textMid, marginTop: "4px" }}>
+              Choose a category for each uncategorized transaction, then save them all at once.
+            </div>
+          </div>
+
+          {!uncategorizedSaveSuccess && (
+            <>
+              <div style={{ display: "grid", gap: "10px" }}>
+                {uncategorizedTransactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) 180px",
+                      gap: "12px",
+                      alignItems: "center",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: C.surfaceAlt,
+                      border: `1px solid ${C.border}`,
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: C.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {transaction.name}
+                      </div>
+                      <div style={{ fontSize: "12px", color: C.textMid, marginTop: "3px" }}>
+                        {transaction.date} | -${formatCurrency(parseFloat(transaction.amount))}
+                      </div>
+                    </div>
+
+                    <select
+                      value={uncategorizedAssignments[transaction.id] || ""}
+                      onChange={(event) =>
+                        onUncategorizedAssignmentChange(transaction.id, event.target.value)
+                      }
+                      style={selectStyle}
+                    >
+                      <option value="">Choose category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={onSaveUncategorizedAssignments}
+                  disabled={!allUncategorizedAssigned}
+                  style={{
+                    background: allUncategorizedAssigned ? C.blue : C.surfaceAlt,
+                    border: "none",
+                    color: allUncategorizedAssigned ? C.white : C.textLight,
+                    padding: "12px 18px",
+                    borderRadius: "10px",
+                    cursor: allUncategorizedAssigned ? "pointer" : "default",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </>
+          )}
+
+          {uncategorizedSaveSuccess && (
+            <div
+              style={{
+                display: "grid",
+                placeItems: "center",
+                minHeight: "220px",
+                textAlign: "center",
+                color: C.green,
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+                    <circle cx="48" cy="48" r="44" fill={C.greenLight} />
+                    <path
+                      d="M28 49L41 62L68 35"
+                      stroke={C.green}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div style={{ fontSize: "18px", fontWeight: 700, marginTop: "10px" }}>
+                  Uncategorized transactions saved
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "stretch" }}>
         <button
           className="import-btn"
@@ -116,28 +267,69 @@ export default function TransactionsTab({
             fontSize: "14px",
             fontWeight: 600,
             transition: "all 0.15s",
-            boxShadow: isImportDragActive ? "0 10px 28px rgba(30,80,212,0.16)" : "0 2px 8px rgba(30,80,212,0.06)",
+            boxShadow: isImportDragActive
+              ? "0 10px 28px rgba(30,80,212,0.16)"
+              : "0 2px 8px rgba(30,80,212,0.06)",
           }}
         >
           <span style={{ fontSize: "14px", fontWeight: 800, letterSpacing: "0.08em" }}>XLS</span>
           <div style={{ textAlign: "left" }}>
-            <div style={{ color: C.text, fontWeight: 700 }}>{isImportDragActive ? "Drop file to import" : "Import from Excel"}</div>
-            <div style={{ fontSize: "12px", color: C.textLight, marginTop: "1px" }}>Drag and drop or click to upload your bank's .xlsx export</div>
+            <div style={{ color: C.text, fontWeight: 700 }}>
+              {isImportDragActive ? "Drop file to import" : "Import from Excel"}
+            </div>
+            <div style={{ fontSize: "12px", color: C.textLight, marginTop: "1px" }}>
+              Drag and drop or click to upload your bank&apos;s .xlsx export
+            </div>
           </div>
         </button>
       </div>
 
-      <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={onOpenImportPicker} style={{ display: "none" }} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        onChange={onOpenImportPicker}
+        style={{ display: "none" }}
+      />
 
       {importError && (
-        <div style={{ background: C.redLight, border: "1px solid #fecaca", borderRadius: "8px", padding: "12px 16px", fontSize: "13px", color: C.red, marginBottom: "14px", fontWeight: 500 }}>
+        <div
+          style={{
+            background: C.redLight,
+            border: "1px solid #fecaca",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            fontSize: "13px",
+            color: C.red,
+            marginBottom: "14px",
+            fontWeight: 500,
+          }}
+        >
           {importError}
         </div>
       )}
 
       {showTxForm ? (
-        <div className="slide-down" style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: "14px", padding: "20px", marginBottom: "20px", boxShadow: "0 4px 16px rgba(30,80,212,0.1)" }}>
-          <div style={{ fontSize: "12px", color: C.textLight, letterSpacing: "2px", marginBottom: "16px", fontWeight: 600 }}>
+        <div
+          className="slide-down"
+          style={{
+            background: C.white,
+            border: `1.5px solid ${C.border}`,
+            borderRadius: "14px",
+            padding: "20px",
+            marginBottom: "20px",
+            boxShadow: "0 4px 16px rgba(30,80,212,0.1)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "12px",
+              color: C.textLight,
+              letterSpacing: "2px",
+              marginBottom: "16px",
+              fontWeight: 600,
+            }}
+          >
             NEW TRANSACTION
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -151,9 +343,35 @@ export default function TransactionsTab({
                 style={inputStyle}
               />
               {autocomplete.length > 0 && (
-                <div className="slide-down" style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: "8px", overflow: "hidden", zIndex: 20, boxShadow: "0 8px 24px rgba(30,80,212,0.12)" }}>
+                <div
+                  className="slide-down"
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 4px)",
+                    left: 0,
+                    right: 0,
+                    background: C.white,
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    zIndex: 20,
+                    boxShadow: "0 8px 24px rgba(30,80,212,0.12)",
+                  }}
+                >
                   {autocomplete.map((name) => (
-                    <div key={name} className="ac-item" onClick={() => onPickSuggestion(name)} style={{ padding: "12px 16px", fontSize: "14px", color: C.textMid, cursor: "pointer", transition: "background 0.1s", borderBottom: `1px solid ${C.border}` }}>
+                    <div
+                      key={name}
+                      className="ac-item"
+                      onClick={() => onPickSuggestion(name)}
+                      style={{
+                        padding: "12px 16px",
+                        fontSize: "14px",
+                        color: C.textMid,
+                        cursor: "pointer",
+                        transition: "background 0.1s",
+                        borderBottom: `1px solid ${C.border}`,
+                      }}
+                    >
                       {name}
                     </div>
                   ))}
@@ -161,19 +379,45 @@ export default function TransactionsTab({
               )}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: "8px", padding: "0 14px", gap: "6px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: C.white,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: "8px",
+                padding: "0 14px",
+                gap: "6px",
+              }}
+            >
               <span style={{ color: C.textLight, fontWeight: 600, fontSize: "16px" }}>$</span>
               <input
                 type="number"
                 placeholder="0.00"
                 value={newTx.amount}
-                onChange={(event) => onNewTransactionChange({ ...newTx, amount: event.target.value })}
+                onChange={(event) =>
+                  onNewTransactionChange({ ...newTx, amount: event.target.value })
+                }
                 onKeyDown={(event) => event.key === "Enter" && onAddTransaction()}
-                style={{ background: "transparent", border: "none", color: C.text, fontSize: "16px", padding: "13px 0", width: "100%", minWidth: 0 }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: C.text,
+                  fontSize: "16px",
+                  padding: "13px 0",
+                  width: "100%",
+                  minWidth: 0,
+                }}
               />
             </div>
 
-            <select value={newTx.categoryId} onChange={(event) => onNewTransactionChange({ ...newTx, categoryId: event.target.value })} style={selectStyle}>
+            <select
+              value={newTx.categoryId}
+              onChange={(event) =>
+                onNewTransactionChange({ ...newTx, categoryId: event.target.value })
+              }
+              style={selectStyle}
+            >
               <option value="" disabled>
                 Select a category
               </option>
@@ -189,30 +433,102 @@ export default function TransactionsTab({
             </select>
 
             <div style={{ display: "flex", gap: "10px" }}>
-              <button className="primary-btn" onClick={onAddTransaction} style={{ flex: 1, background: C.blue, border: "none", color: C.white, padding: "14px", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: 700, transition: "background 0.15s" }}>
+              <button
+                className="primary-btn"
+                onClick={onAddTransaction}
+                style={{
+                  flex: 1,
+                  background: C.blue,
+                  border: "none",
+                  color: C.white,
+                  padding: "14px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  transition: "background 0.15s",
+                }}
+              >
                 ADD TRANSACTION
               </button>
-              <button className="cancel-btn" onClick={onCloseTxForm} style={{ background: "transparent", border: `1.5px solid ${C.border}`, color: C.textMid, padding: "14px 20px", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: 500, transition: "all 0.15s" }}>
+              <button
+                className="cancel-btn"
+                onClick={onCloseTxForm}
+                style={{
+                  background: "transparent",
+                  border: `1.5px solid ${C.border}`,
+                  color: C.textMid,
+                  padding: "14px 20px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  transition: "all 0.15s",
+                }}
+              >
                 Cancel
               </button>
             </div>
           </div>
 
           {categories.length === 0 && (
-            <div style={{ marginTop: "12px", fontSize: "13px", color: C.orange, textAlign: "center", fontWeight: 500 }}>
+            <div
+              style={{
+                marginTop: "12px",
+                fontSize: "13px",
+                color: C.orange,
+                textAlign: "center",
+                fontWeight: 500,
+              }}
+            >
               Add budget categories first.
             </div>
           )}
         </div>
       ) : (
         <div style={{ marginBottom: "20px" }}>
-          <button className="log-btn" onClick={() => onOpenTxForm()} style={{ width: "100%", background: C.white, border: `1.5px solid ${C.border}`, color: C.text, padding: "16px", borderRadius: "10px", cursor: "pointer", fontSize: "14px", fontWeight: 600, display: "block", transition: "all 0.15s", boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
+          <button
+            className="log-btn"
+            onClick={() => onOpenTxForm()}
+            style={{
+              width: "100%",
+              background: C.white,
+              border: `1.5px solid ${C.border}`,
+              color: C.text,
+              padding: "16px",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: 600,
+              display: "block",
+              transition: "all 0.15s",
+              boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+            }}
+          >
             + Log Transaction Manually
           </button>
           {transactions.length === 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px", padding: "12px 16px", background: C.goldLight, border: "1px solid #f5d68a", borderRadius: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginTop: "12px",
+                padding: "12px 16px",
+                background: C.goldLight,
+                border: "1px solid #f5d68a",
+                borderRadius: "8px",
+              }}
+            >
               <span style={{ fontSize: "18px", flexShrink: 0 }}>TIP</span>
-              <span style={{ fontSize: "13px", color: C.goldDark, fontWeight: 500, lineHeight: "1.5" }}>
+              <span
+                style={{
+                  fontSize: "13px",
+                  color: C.goldDark,
+                  fontWeight: 500,
+                  lineHeight: "1.5",
+                }}
+              >
                 Import from Excel above or press this button to add manually.
               </span>
             </div>
@@ -239,7 +555,14 @@ export default function TransactionsTab({
       )}
 
       {transactions.length > 0 ? (
-        <div style={{ borderRadius: "12px", overflow: "hidden", border: `1.5px solid ${C.border}`, boxShadow: "0 2px 8px rgba(30,80,212,0.06)" }}>
+        <div
+          style={{
+            borderRadius: "12px",
+            overflow: "hidden",
+            border: `1.5px solid ${C.border}`,
+            boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -363,7 +686,8 @@ export default function TransactionsTab({
                       : index % 2 === 0
                         ? C.white
                         : C.surfaceAlt,
-                    borderBottom: index < transactions.length - 1 ? `1px solid ${C.border}` : "none",
+                    borderBottom:
+                      index < transactions.length - 1 ? `1px solid ${C.border}` : "none",
                     transition: "background 0.15s",
                   }}
                 >
@@ -397,7 +721,15 @@ export default function TransactionsTab({
                     >
                       {transaction.name}
                     </button>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px", flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginTop: "3px",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       {category ? (
                         <button
                           onClick={() => openTransactionDetails(transaction)}
@@ -450,7 +782,17 @@ export default function TransactionsTab({
                     -${formatCurrency(parseFloat(transaction.amount))}
                   </div>
 
-                  <div className="tx-actions" style={{ display: "flex", alignItems: "center", gap: "2px", opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
+                  <div
+                    className="tx-actions"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      opacity: 0,
+                      transition: "opacity 0.15s",
+                      flexShrink: 0,
+                    }}
+                  >
                     <button
                       onClick={() => onDeleteTransaction(transaction)}
                       title="Delete transaction"
@@ -471,7 +813,13 @@ export default function TransactionsTab({
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                         <path d="M9 3H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <path d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path
+                          d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                         <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                         <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
