@@ -80,6 +80,8 @@ export default function BudgetApp() {
   const [editVal, setEditVal] = useState({});
   const [editingIncome, setEditingIncome] = useState(false);
   const [incomeInput, setIncomeInput] = useState("");
+  const [editingSavings, setEditingSavings] = useState(false);
+  const [savingsInput, setSavingsInput] = useState("");
   const [activeTab, setActiveTab] = useState("budget");
   const [showTxForm, setShowTxForm] = useState(false);
   const [newTx, setNewTx] = useState({ name: "", amount: "", categoryId: "" });
@@ -112,6 +114,7 @@ export default function BudgetApp() {
   const [uncategorizedSaveSuccess, setUncategorizedSaveSuccess] = useState(false);
 
   const incomeRef = useRef(null);
+  const savingsRef = useRef(null);
   const nameInputRef = useRef(null);
   const inlineNameRef = useRef(null);
   const quickNameRef = useRef(null);
@@ -570,6 +573,21 @@ export default function BudgetApp() {
 
   const cancelIncomeEdit = () => {
     setEditingIncome(false);
+  };
+
+  const startSavingsEdit = () => {
+    setSavingsInput(data.currentSavings || "");
+    setEditingSavings(true);
+    setTimeout(() => savingsRef.current?.focus(), 50);
+  };
+
+  const saveSavings = () => {
+    update({ ...data, currentSavings: savingsInput });
+    setEditingSavings(false);
+  };
+
+  const cancelSavingsEdit = () => {
+    setEditingSavings(false);
   };
 
   const prevMonth = () => {
@@ -1251,8 +1269,17 @@ export default function BudgetApp() {
           totalSpent={totalSpent}
           transactionCount={transactions.length}
           formatCurrency={formatCurrency}
+          spendPct={spendPct}
+          barColor={barColor}
+          currentSavings={data.currentSavings || ""}
+          editingSavings={editingSavings}
+          savingsInput={savingsInput}
+          savingsRef={savingsRef}
+          onStartSavingsEdit={startSavingsEdit}
+          onSavingsInputChange={setSavingsInput}
+          onSaveSavings={saveSavings}
+          onCancelSavingsEdit={cancelSavingsEdit}
         />
-        <SpendProgress income={income} spendPct={spendPct} barColor={barColor} />
 
         <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
 

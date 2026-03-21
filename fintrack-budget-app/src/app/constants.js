@@ -15,6 +15,7 @@ export const MONTHS = [
 
 export const defaultData = () => ({
   income: "",
+  currentSavings: "",
   categories: [],
   transactions: [],
   bills: [],
