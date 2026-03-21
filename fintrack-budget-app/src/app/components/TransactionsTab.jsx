@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { C } from "../constants";
 import TransactionDetailsModal from "./TransactionDetailsModal";
 import { inputStyle, selectStyle } from "../styles";
@@ -51,9 +52,24 @@ export default function TransactionsTab({
   const [activeCategoryId, setActiveCategoryId] = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState("__none__");
   const [isMobileSelectionMode, setIsMobileSelectionMode] = useState(false);
+  const [showFloatingBulk, setShowFloatingBulk] = useState(false);
   const isSelectionMode = isMobileSelectionMode || selectedCount > 0;
   const longPressTimerRef = useRef(null);
   const hasLongPressedRef = useRef(false);
+  const topSectionRef = useRef(null);
+
+  useEffect(() => {
+    if (!topSectionRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setShowFloatingBulk(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0, rootMargin: "0px" }
+    );
+    observer.observe(topSectionRef.current);
+    return () => observer.disconnect();
+  }, [transactions.length]);
 
   const startLongPress = (id) => {
     hasLongPressedRef.current = false;
@@ -593,6 +609,86 @@ export default function TransactionsTab({
         </div>
       )}
 
+      {selectedCount > 0 && showFloatingBulk && typeof document !== "undefined" && createPortal(
+        <div
+          className="show-btn-mobile slide-down"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            left: "20px",
+            right: "20px",
+            background: C.surface,
+            borderRadius: "18px",
+            padding: "16px",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
+            border: `1px solid ${C.borderHover}`,
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: C.text, paddingLeft: "4px" }}>
+              {selectedCount} selected
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "6px", width: "100%", alignItems: "stretch" }}>
+            <select
+              value={bulkCategoryId}
+              onChange={(e) => setBulkCategoryId(e.target.value)}
+              style={{
+                background: C.surfaceAlt,
+                border: `1.5px solid ${C.border}`,
+                color: bulkCategoryId === "__none__" ? C.textLight : C.text,
+                padding: "8px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                minWidth: "0",
+                flex: 1,
+                cursor: "pointer",
+                outline: "none"
+              }}
+            >
+               <option value="__none__">Category</option>
+               <option value="">Uncategorized</option>
+               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+
+            <button
+              onClick={assignSelectedTransactions}
+              disabled={bulkCategoryId === "__none__"}
+              style={{
+                background: bulkCategoryId === "__none__" ? C.surfaceAlt : C.blue,
+                color: bulkCategoryId === "__none__" ? C.textLight : C.white,
+                border: "none",
+                borderRadius: "10px",
+                padding: "0 12px",
+                fontWeight: 700,
+                opacity: bulkCategoryId === "__none__" ? 0.7 : 1,
+                cursor: bulkCategoryId === "__none__" ? "not-allowed" : "pointer",
+                fontSize: "13px"
+              }}
+            >
+              Assign
+            </button>
+            <button
+              onClick={onDeleteSelectedTransactions}
+              style={{ background: C.red, color: C.white, border: "none", borderRadius: "10px", padding: "0 12px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+            >
+              Del
+            </button>
+            <button
+               onClick={cancelSelectionMode}
+               style={{ background: C.redLight, border: 'none', color: C.red, fontWeight: 700, fontSize: "13px", cursor: "pointer", padding: "0 12px", borderRadius: "10px" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {transactions.length > 0 ? (
         <div
           style={{
@@ -603,6 +699,7 @@ export default function TransactionsTab({
           }}
         >
           <div
+            ref={topSectionRef}
             style={{
               display: "flex",
               alignItems: "center",
