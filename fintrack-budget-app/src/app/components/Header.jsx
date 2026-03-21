@@ -47,7 +47,7 @@ export default function Header({
             marginTop: "3px",
           }}
         >
-          Monthly Budget
+          Financial Tracker
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { C } from "../constants";
 const tabs = [
   ["budget", "Budget"],
   ["transactions", "Transactions"],
+  ["bills", "Bills"],
 ];
 
 export default function TabSwitcher({ activeTab, onTabChange }) {

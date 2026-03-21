@@ -44,6 +44,7 @@ function normalizeBudgetRecord(record) {
     income: record?.income ?? "",
     categories: Array.isArray(record?.categories) ? record.categories : [],
     transactions: Array.isArray(record?.transactions) ? record.transactions : [],
+    bills: Array.isArray(record?.bills) ? record.bills : [],
   };
 }
 
@@ -66,7 +67,7 @@ function createSupabaseStorage() {
         if (budgetKey) {
           const { data, error } = await supabase
             .from("monthly_budgets")
-            .select("income, categories, transactions")
+            .select("income, categories, transactions, bills")
             .eq("user_id", userId)
             .eq("month", budgetKey.month)
             .eq("year", budgetKey.year)
@@ -150,6 +151,7 @@ function createSupabaseStorage() {
               income: parsedValue.income,
               categories: parsedValue.categories,
               transactions: parsedValue.transactions,
+              bills: parsedValue.bills,
             },
             {
               onConflict: "user_id,year,month",

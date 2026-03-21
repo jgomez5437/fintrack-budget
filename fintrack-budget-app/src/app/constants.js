@@ -17,6 +17,7 @@ export const defaultData = () => ({
   income: "",
   categories: [],
   transactions: [],
+  bills: [],
 });
 
 export const C = {

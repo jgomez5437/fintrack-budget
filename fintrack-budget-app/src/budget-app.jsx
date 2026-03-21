@@ -28,6 +28,7 @@ import SpendProgress from "./app/components/SpendProgress";
 import TabSwitcher from "./app/components/TabSwitcher";
 import BudgetTab from "./app/components/BudgetTab";
 import TransactionsTab from "./app/components/TransactionsTab";
+import BillsTab from "./app/components/BillsTab";
 import ImportReviewModal from "./app/components/ImportReviewModal";
 import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
 import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
@@ -59,6 +60,7 @@ function cloneBudgetSetup(sourceData) {
       amount: category.amount,
     })),
     transactions: [],
+    bills: sourceData.bills || [],
   };
 }
 
@@ -869,6 +871,16 @@ export default function BudgetApp() {
     setPendingDelete(null);
   };
 
+  const addBill = (newBill) => {
+    const updatedBills = [...(data.bills || []), newBill];
+    update({ ...data, bills: updatedBills });
+  };
+
+  const deleteBill = (billId) => {
+    const updatedBills = (data.bills || []).filter((bill) => bill.id !== billId);
+    update({ ...data, bills: updatedBills });
+  };
+
   const openInline = (categoryId) => {
     setInlineCatId(categoryId);
     setInlineTx({ name: "", amount: "" });
@@ -1240,12 +1252,11 @@ export default function BudgetApp() {
           transactionCount={transactions.length}
           formatCurrency={formatCurrency}
         />
-
         <SpendProgress income={income} spendPct={spendPct} barColor={barColor} />
 
         <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {activeTab === "budget" ? (
+        {activeTab === "budget" && (
           <BudgetTab
             categories={data.categories}
             spentByCategory={spentByCategory}
@@ -1286,7 +1297,8 @@ export default function BudgetApp() {
             }
             onSubmitQuickAdd={submitQuickAdd}
           />
-        ) : (
+        )}
+        {activeTab === "transactions" && (
           <TransactionsTab
             categories={data.categories}
             transactions={transactions}
@@ -1324,6 +1336,14 @@ export default function BudgetApp() {
             onAssignSelectedTransactions={assignSelectedTransactionsToCategory}
             onUncategorizedAssignmentChange={updateUncategorizedAssignment}
             onSaveUncategorizedAssignments={saveUncategorizedAssignments}
+          />
+        )}
+        {activeTab === "bills" && (
+          <BillsTab
+            bills={data.bills || []}
+            onAddBill={addBill}
+            onDeleteBill={deleteBill}
+            formatCurrency={formatCurrency}
           />
         )}
       </div>
