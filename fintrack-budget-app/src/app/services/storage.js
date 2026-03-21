@@ -194,6 +194,39 @@ function createSupabaseStorage() {
 
       await browserStorage.set(key, value);
     },
+
+    async getAllKeys() {
+      const keys = [];
+      try {
+        const supabase = getSupabase();
+        if (supabase) {
+          const session = await ensureSupabaseSession();
+          const userId = session?.user?.id;
+          if (userId) {
+            const { data, error } = await supabase
+              .from("monthly_budgets")
+              .select("month, year")
+              .eq("user_id", userId);
+            
+            if (!error && data) {
+              data.forEach(item => {
+                keys.push(`budget-${item.month}-${item.year}`);
+              });
+            }
+          }
+        }
+      } catch {}
+
+      if (typeof window !== "undefined") {
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const key = window.localStorage.key(i);
+          if (key && budgetKeyPattern.test(key) && !keys.includes(key)) {
+            keys.push(key);
+          }
+        }
+      }
+      return keys;
+    },
   };
 }
 

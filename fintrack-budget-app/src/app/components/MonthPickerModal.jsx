@@ -1,13 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, MONTHS } from "../constants";
+import { getStorage } from "../services/storage";
 
 export default function MonthPickerModal({ currentMonth, currentYear, onSelectMonth, onCancel }) {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [initializedKeys, setInitializedKeys] = useState(new Set());
+
+  useEffect(() => {
+    async function loadKeys() {
+      const keys = await getStorage().getAllKeys();
+      setInitializedKeys(new Set(keys));
+    }
+    loadKeys();
+  }, []);
 
   const handleConfirm = () => {
+    if (isSelectionDisabled) return;
     onSelectMonth(selectedMonth, selectedYear);
   };
+
+  const now = new Date();
+  const realMonth = now.getMonth();
+  const realYear = now.getFullYear();
+  const selectedBudgetKey = `budget-${selectedMonth}-${selectedYear}`;
+  const isSelectedPast = selectedYear < realYear || (selectedYear === realYear && selectedMonth < realMonth);
+  const isSelectionDisabled = isSelectedPast && !initializedKeys.has(selectedBudgetKey);
 
   return (
     <div
@@ -82,20 +100,32 @@ export default function MonthPickerModal({ currentMonth, currentYear, onSelectMo
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "24px" }}>
           {MONTHS.map((mName, idx) => {
             const isTarget = selectedMonth === idx;
+            const budgetKey = `budget-${idx}-${selectedYear}`;
+            
+            const now = new Date();
+            const realMonth = now.getMonth();
+            const realYear = now.getFullYear();
+            
+            const isPast = selectedYear < realYear || (selectedYear === realYear && idx < realMonth);
+            const isInitialized = initializedKeys.has(budgetKey);
+            const isDisabled = isPast && !isInitialized;
+
             return (
               <button
                 key={idx}
+                disabled={isDisabled}
                 onClick={() => setSelectedMonth(idx)}
                 style={{
                   padding: "12px 0",
                   borderRadius: "12px",
-                  border: isTarget ? `1.5px solid ${C.blue}` : `1.5px solid ${C.border}`,
+                  border: isTarget ? `1.5px solid ${C.blue}` : `1.5px solid ${isDisabled ? C.border : C.border}`,
                   background: isTarget ? C.blue : "transparent",
-                  color: isTarget ? C.white : C.text,
+                  color: isTarget ? C.white : isDisabled ? C.textLight : C.text,
                   fontWeight: isTarget ? 700 : 500,
                   fontSize: "13px",
-                  cursor: "pointer",
+                  cursor: isDisabled ? "not-allowed" : "pointer",
                   transition: "all 0.15s",
+                  opacity: isDisabled ? 0.4 : 1,
                 }}
               >
                 {mName.slice(0, 3)}
@@ -123,6 +153,7 @@ export default function MonthPickerModal({ currentMonth, currentYear, onSelectMo
           </button>
           <button
             onClick={handleConfirm}
+            disabled={isSelectionDisabled}
             style={{
               flex: 1,
               padding: "14px",
@@ -131,9 +162,10 @@ export default function MonthPickerModal({ currentMonth, currentYear, onSelectMo
               border: "none",
               color: C.white,
               fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(30,80,212,0.2)",
-              fontSize: "14px"
+              cursor: isSelectionDisabled ? "not-allowed" : "pointer",
+              boxShadow: isSelectionDisabled ? "none" : "0 4px 12px rgba(30,80,212,0.2)",
+              fontSize: "14px",
+              opacity: isSelectionDisabled ? 0.4 : 1,
             }}
           >
             Go to Month
