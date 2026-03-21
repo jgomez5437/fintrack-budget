@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { C } from "../constants";
 import CategoryEditModal from "./CategoryEditModal";
 import { inputStyle } from "../styles";
@@ -24,8 +25,69 @@ export default function BudgetTab({
   onInlineAmountChange,
   onSubmitInline,
   onOpenAddCategory,
+  onReorderCategories,
 }) {
   const activeEditCategory = categories.find((category) => category.id === editingId);
+  const dragIndexRef = useRef(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // ── Desktop DnD ──
+  const handleDragStart = (index) => {
+    dragIndexRef.current = index;
+  };
+  const handleDragOver = (event, index) => {
+    event.preventDefault();
+    setDragOverIndex(index);
+  };
+  const handleDrop = (index) => {
+    const from = dragIndexRef.current;
+    if (from === null || from === index) { setDragOverIndex(null); return; }
+    const reordered = [...categories];
+    const [removed] = reordered.splice(from, 1);
+    reordered.splice(index, 0, removed);
+    onReorderCategories(reordered);
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+  };
+  const handleDragEnd = () => {
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+  };
+
+  // ── Touch / Pointer DnD ──
+  const pointerStartY = useRef(null);
+  const pointerStartIndex = useRef(null);
+
+  const handlePointerDown = (event, index) => {
+    // Only activate on the handle itself
+    event.stopPropagation();
+    pointerStartY.current = event.clientY;
+    pointerStartIndex.current = index;
+    dragIndexRef.current = index;
+  };
+
+  const handlePointerMove = (event) => {
+    if (dragIndexRef.current === null) return;
+    const rows = document.querySelectorAll(".cat-drag-row");
+    let closest = null;
+    let closestDist = Infinity;
+    rows.forEach((row, i) => {
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      const dist = Math.abs(event.clientY - mid);
+      if (dist < closestDist) { closestDist = dist; closest = i; }
+    });
+    if (closest !== null) setDragOverIndex(closest);
+  };
+
+  const handlePointerUp = () => {
+    if (dragIndexRef.current !== null && dragOverIndex !== null) {
+      handleDrop(dragOverIndex);
+    } else {
+      dragIndexRef.current = null;
+      setDragOverIndex(null);
+    }
+  };
 
   return (
     <div className="fade-up">
@@ -100,11 +162,20 @@ export default function BudgetTab({
             return (
               <div
                 key={category.id}
-                className="cat-row"
+                className="cat-row cat-drag-row"
                 onClick={() => onStartEdit(category)}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={handleDragEnd}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
                 style={{
-                  padding: "14px 18px",
-                  background: index % 2 === 0 ? C.surface : C.surfaceAlt,
+                  padding: "14px 18px 14px 8px",
+                  background: dragOverIndex === index
+                    ? C.blueLight
+                    : index % 2 === 0 ? C.surface : C.surfaceAlt,
                   borderBottom:
                     index < categories.length - 1
                       ? `1px solid ${C.border}`
@@ -112,9 +183,37 @@ export default function BudgetTab({
                   transition: "background 0.15s",
                   animation: `fadeUp 0.25s ease ${index * 0.04}s both`,
                   cursor: "pointer",
+                  outline: dragOverIndex === index ? `2px solid ${C.blue}` : "none",
+                  outlineOffset: "-2px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  {/* Drag handle */}
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      color: C.textLight,
+                      cursor: "grab",
+                      padding: "4px 4px",
+                      display: "flex",
+                      alignItems: "center",
+                      touchAction: "none",
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, index)}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Drag to reorder"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="8" y1="6" x2="21" y2="6"/>
+                      <line x1="8" y1="12" x2="21" y2="12"/>
+                      <line x1="8" y1="18" x2="21" y2="18"/>
+                      <line x1="3" y1="6" x2="3.01" y2="6"/>
+                      <line x1="3" y1="12" x2="3.01" y2="12"/>
+                      <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1, minWidth: 0 }}>
                   <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
                     <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
                       <circle
@@ -286,7 +385,8 @@ export default function BudgetTab({
                       </span>
                     </div>
                   </div>
-                </div>
+                  </div>{/* end inner flex */}
+                </div>{/* end outer flex */}
 
                 {inlineCatId === category.id && (
                   <div

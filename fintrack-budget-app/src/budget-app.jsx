@@ -1435,6 +1435,9 @@ export default function BudgetApp() {
               setQuickTx((current) => ({ ...current, categoryId: value }))
             }
             onSubmitQuickAdd={submitQuickAdd}
+            onReorderCategories={(reordered) => {
+              setData((prev) => ({ ...prev, categories: reordered }));
+            }}
           />
         )}
         {activeTab === "transactions" && (
