@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { C, MONTHS } from "../constants";
+import MonthPickerModal from "./MonthPickerModal";
 
 export default function Header({
   userEmail,
@@ -11,7 +13,10 @@ export default function Header({
   canGoPrev = true,
   theme,
   onToggleTheme,
+  onGoToMonth,
 }) {
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+
   return (
     <div
       style={{
@@ -78,7 +83,11 @@ export default function Header({
           >
             {"<"}
           </button>
-          <div style={{ textAlign: "center", minWidth: "110px" }}>
+          <div 
+            style={{ textAlign: "center", minWidth: "110px", cursor: "pointer", transition: "all 0.15s" }}
+            onClick={() => setShowMonthPicker(true)}
+            className="header-month-btn"
+          >
             <div
               style={{
                 fontSize: "15px",
@@ -186,6 +195,17 @@ export default function Header({
           </div>
         )}
       </div>
+      {showMonthPicker && (
+        <MonthPickerModal
+          currentMonth={month}
+          currentYear={year}
+          onSelectMonth={(m, y) => {
+            setShowMonthPicker(false);
+            onGoToMonth(m, y);
+          }}
+          onCancel={() => setShowMonthPicker(false)}
+        />
+      )}
     </div>
   );
 }

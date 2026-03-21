@@ -635,6 +635,23 @@ export default function BudgetApp() {
     prepareNextMonth();
   };
 
+  const goToMonth = async (targetMonth, targetYear) => {
+    if (targetMonth === month && targetYear === year) return;
+    const budgetKey = `budget-${targetMonth}-${targetYear}`;
+
+    try {
+      const existing = await storage.get(budgetKey);
+      if (existing) {
+        setMonth(targetMonth);
+        setYear(targetYear);
+        return;
+      }
+      setNextMonthPrompt({ month: targetMonth, year: targetYear });
+    } catch {
+      setNextMonthPrompt({ month: targetMonth, year: targetYear });
+    }
+  };
+
   const createNextMonth = useCallback(
     async (shouldTransfer) => {
       if (!nextMonthPrompt) return;
@@ -1207,6 +1224,7 @@ export default function BudgetApp() {
         year={year}
         onPrevMonth={prevMonth}
         onNextMonth={nextMonth}
+        onGoToMonth={goToMonth}
         canGoPrev={canGoPrev}
         userEmail={session.user.email}
         onSignOut={handleSignOut}
