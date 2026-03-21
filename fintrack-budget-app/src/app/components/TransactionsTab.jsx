@@ -53,7 +53,12 @@ export default function TransactionsTab({
   const [bulkCategoryId, setBulkCategoryId] = useState("__none__");
   const [isMobileSelectionMode, setIsMobileSelectionMode] = useState(false);
   const [showFloatingBulk, setShowFloatingBulk] = useState(false);
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const isSelectionMode = isMobileSelectionMode || selectedCount > 0;
+  const filteredTransactions = filterCategoryId
+    ? transactions.filter((t) => (filterCategoryId === "__uncategorized__" ? !t.categoryId : String(t.categoryId) === filterCategoryId))
+    : transactions;
   const longPressTimerRef = useRef(null);
   const hasLongPressedRef = useRef(false);
   const topSectionRef = useRef(null);
@@ -300,44 +305,6 @@ export default function TransactionsTab({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "stretch" }}>
-        <button
-          className="import-btn"
-          onClick={onOpenImportPicker}
-          onDragOver={onImportDragOver}
-          onDragLeave={onImportDragLeave}
-          onDrop={onImportDrop}
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "10px",
-            background: isImportDragActive ? C.blueLight : C.surface,
-            border: `1.5px dashed ${isImportDragActive ? C.blue : C.blueMid}`,
-            color: isImportDragActive ? C.text : C.textMid,
-            padding: "14px 20px",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: 600,
-            transition: "all 0.15s",
-            boxShadow: isImportDragActive
-              ? "0 10px 28px rgba(30,80,212,0.16)"
-              : "0 2px 8px rgba(30,80,212,0.06)",
-          }}
-        >
-          <span style={{ fontSize: "14px", fontWeight: 800, letterSpacing: "0.08em" }}>XLS</span>
-          <div style={{ textAlign: "left" }}>
-            <div style={{ color: C.text, fontWeight: 700 }}>
-              {isImportDragActive ? "Drop file to import" : "Import from Excel"}
-            </div>
-            <div style={{ fontSize: "12px", color: C.textLight, marginTop: "1px" }}>
-              Drag and drop or click to upload your bank&apos;s .xlsx export
-            </div>
-          </div>
-        </button>
-      </div>
 
       <input
         ref={fileInputRef}
@@ -595,17 +562,50 @@ export default function TransactionsTab({
         <div
           style={{
             marginBottom: "16px",
-            padding: "12px 14px",
+            padding: "10px 14px",
             background: C.surface,
             border: `1.5px solid ${C.border}`,
             borderRadius: "10px",
             boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
-            fontSize: "13px",
-            color: C.textMid,
-            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
           }}
         >
-          Most Recent Transactions: {mostRecentImportedTransactionLabel}
+          <span style={{ fontSize: "13px", color: C.textMid, fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Most Recent: {mostRecentImportedTransactionLabel}
+          </span>
+          <button
+            className="import-btn"
+            onClick={onOpenImportPicker}
+            onDragOver={onImportDragOver}
+            onDragLeave={onImportDragLeave}
+            onDrop={onImportDrop}
+            style={{
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: isImportDragActive ? C.blue : C.blueLight,
+              border: `1.5px solid ${C.blueMid}`,
+              color: isImportDragActive ? C.white : C.blue,
+              padding: "7px 12px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: 700,
+              transition: "all 0.15s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            {isImportDragActive ? "Drop here" : "Import Excel"}
+          </button>
         </div>
       )}
 
@@ -740,13 +740,15 @@ export default function TransactionsTab({
                   onClick={() => setIsMobileSelectionMode(true)}
                   style={{
                     background: "transparent",
-                    border: "none",
-                    color: C.text,
+                    border: `1.5px solid ${C.border}`,
+                    color: C.textMid,
                     fontWeight: 600,
-                    fontSize: "14px",
+                    fontSize: "13px",
                     cursor: "pointer",
-                    padding: 0,
-                    textAlign: "left"
+                    padding: "5px 11px",
+                    borderRadius: "999px",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   Select Transactions
@@ -760,6 +762,35 @@ export default function TransactionsTab({
                 {selectedCount} selected
               </span>
             </div>
+
+            {/* Filter button — always visible on the right */}
+            {!isSelectionMode && (
+              <button
+                onClick={() => setShowFilterDropdown((v) => !v)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  background: filterCategoryId ? C.blue : "transparent",
+                  border: `1.5px solid ${filterCategoryId ? C.blue : C.border}`,
+                  color: filterCategoryId ? C.white : C.textMid,
+                  fontWeight: 700,
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  padding: "5px 11px",
+                  borderRadius: "999px",
+                  transition: "all 0.15s",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6"/>
+                  <line x1="7" y1="12" x2="17" y2="12"/>
+                  <line x1="10" y1="18" x2="14" y2="18"/>
+                </svg>
+                {filterCategoryId ? "Filtered" : "Filter"}
+              </button>
+            )}
 
             {isSelectionMode && (
               <button
@@ -848,8 +879,64 @@ export default function TransactionsTab({
             )}
           </div>
 
+          {/* Filter dropdown */}
+          {showFilterDropdown && (
+            <div
+              className="slide-down"
+              style={{
+                padding: "12px 14px",
+                borderBottom: `1px solid ${C.border}`,
+                background: C.surfaceAlt,
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={{ fontSize: "13px", fontWeight: 600, color: C.textLight, flexShrink: 0 }}>Filter by:</span>
+              <select
+                value={filterCategoryId}
+                onChange={(e) => setFilterCategoryId(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: C.surface,
+                  border: `1.5px solid ${C.border}`,
+                  color: filterCategoryId ? C.text : C.textLight,
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="">All Categories</option>
+                <option value="__uncategorized__">Uncategorized</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {filterCategoryId && (
+                <button
+                  onClick={() => { setFilterCategoryId(""); }}
+                  style={{
+                    flexShrink: 0,
+                    background: "transparent",
+                    border: "none",
+                    color: C.red,
+                    fontWeight: 700,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
           <div>
-            {transactions.map((transaction, index) => {
+            {filteredTransactions.map((transaction, index) => {
               const category = getCategoryById(transaction.categoryId);
               const isSelected = selectedTransactionIds.includes(transaction.id);
               return (
