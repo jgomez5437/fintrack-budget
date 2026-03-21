@@ -3,6 +3,7 @@ import { C, defaultData } from "./app/constants";
 import { buildBudgetSummary, getCategoryById } from "./app/utils/budget";
 import { formatCurrency, todayLabel } from "./app/utils/formatters";
 import { parseImportFile } from "./app/services/importTransactions";
+import { autoAssignImportCategory } from "./app/utils/importCategoryRules";
 import { getStorage } from "./app/services/storage";
 import {
   getCurrentSession,
@@ -706,7 +707,7 @@ export default function BudgetApp() {
     setImportError("");
     try {
       const parsedRows = await parseImportFile(file);
-      setImportRows(parsedRows);
+      setImportRows(autoAssignImportCategory(parsedRows, data.categories));
     } catch (error) {
       setImportError(error.message);
     }
