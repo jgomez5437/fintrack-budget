@@ -11,8 +11,7 @@ export default function CategoryAlertBanner({ alerts, formatCurrency, onDismiss 
         padding: "18px 18px 16px",
         borderRadius: "18px",
         border: `1.5px solid ${C.orange}`,
-        background: "linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)",
-        boxShadow: "0 10px 24px rgba(234,88,12,0.12)",
+        background: C.orangeLight,
       }}
     >
       <div

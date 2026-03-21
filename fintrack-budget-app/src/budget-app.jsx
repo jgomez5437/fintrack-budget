@@ -1288,10 +1288,9 @@ export default function BudgetApp() {
               gap: "12px",
               padding: "14px 16px",
               marginBottom: "18px",
-              background: C.surface,
+              background: C.goldLight,
               border: `1.5px solid ${C.gold}`,
               borderRadius: "14px",
-              boxShadow: "0 8px 24px rgba(245,166,35,0.12)",
               flexWrap: "wrap",
             }}
           >

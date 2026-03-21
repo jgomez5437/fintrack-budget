@@ -23,6 +23,7 @@ export default function GlobalStyles() {
         --color-red: #dc2626;
         --color-red-light: #fee2e2;
         --color-orange: #ea580c;
+        --color-orange-light: #ffedd5;
         --color-text: #0f1c4d;
         --color-text-mid: #4a5a8a;
         --color-text-light: #8896bb;
@@ -47,6 +48,7 @@ export default function GlobalStyles() {
         --color-red: #ef4444;
         --color-red-light: #3e1b1b;
         --color-orange: #f97316;
+        --color-orange-light: #431407;
         --color-text: #f8fafc;
         --color-text-mid: #94a3b8;
         --color-text-light: #64748b;

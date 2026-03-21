@@ -39,6 +39,7 @@ export const C = {
   red: "var(--color-red)",
   redLight: "var(--color-red-light)",
   orange: "var(--color-orange)",
+  orangeLight: "var(--color-orange-light)",
   text: "var(--color-text)",
   textMid: "var(--color-text-mid)",
   textLight: "var(--color-text-light)",
