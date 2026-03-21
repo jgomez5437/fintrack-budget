@@ -225,7 +225,10 @@ export default function BudgetApp() {
   );
 
   const {
+    expectedSurplus,
+    expectedSurplusPositive,
     income,
+    mostMoneySpentCategory,
     totalPlanned,
     transactions,
     spentByCategory,
@@ -912,11 +915,14 @@ export default function BudgetApp() {
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
         <SummaryCards
           editingIncome={editingIncome}
+          expectedSurplus={expectedSurplus}
+          expectedSurplusPositive={expectedSurplusPositive}
           income={income}
           incomeInput={incomeInput}
           incomeRef={incomeRef}
           leftover={leftover}
           leftoverPositive={leftoverPositive}
+          mostMoneySpentCategory={mostMoneySpentCategory}
           onStartIncomeEdit={startIncomeEdit}
           onIncomeInputChange={setIncomeInput}
           onSaveIncome={saveIncome}

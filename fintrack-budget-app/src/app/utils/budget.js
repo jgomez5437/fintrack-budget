@@ -21,10 +21,19 @@ export function buildBudgetSummary(data) {
     0,
   );
   const leftover = totalPlanned - totalSpent;
+  const expectedSurplus = income - totalSpent;
   const spendPct = income > 0 ? Math.min((totalSpent / income) * 100, 100) : 0;
   const leftoverPositive = leftover >= 0;
+  const expectedSurplusPositive = expectedSurplus >= 0;
   const barColor = spendPct > 90 ? C.red : spendPct > 70 ? C.orange : C.green;
   const pastNames = [...new Set(transactions.map((transaction) => transaction.name))];
+  const mostMoneySpentCategory = categories
+    .filter((category) => category.name?.trim().toLowerCase() !== "rent")
+    .map((category) => ({
+      name: category.name,
+      spent: spentByCategory[category.id] || 0,
+    }))
+    .sort((a, b) => b.spent - a.spent)[0];
 
   return {
     income,
@@ -33,10 +42,13 @@ export function buildBudgetSummary(data) {
     spentByCategory,
     totalSpent,
     leftover,
+    expectedSurplus,
     spendPct,
     leftoverPositive,
+    expectedSurplusPositive,
     barColor,
     pastNames,
+    mostMoneySpentCategory: mostMoneySpentCategory?.spent > 0 ? mostMoneySpentCategory.name : null,
   };
 }
 

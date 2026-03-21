@@ -2,11 +2,14 @@ import { C } from "../constants";
 
 export default function SummaryCards({
   editingIncome,
+  expectedSurplus,
+  expectedSurplusPositive,
   income,
   incomeInput,
   incomeRef,
   leftover,
   leftoverPositive,
+  mostMoneySpentCategory,
   onStartIncomeEdit,
   onIncomeInputChange,
   onSaveIncome,
@@ -177,6 +180,46 @@ export default function SummaryCards({
 
       <div
         style={{
+          background: expectedSurplusPositive ? C.greenLight : C.redLight,
+          border: `1.5px solid ${expectedSurplusPositive ? "#bbf7d0" : "#fecaca"}`,
+          borderRadius: "14px",
+          padding: "20px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "11px",
+            color: expectedSurplusPositive ? C.green : C.red,
+            letterSpacing: "2px",
+            marginBottom: "8px",
+            fontWeight: 600,
+          }}
+        >
+          EXPECTED SURPLUS
+        </div>
+        <div
+          style={{
+            fontSize: "26px",
+            fontWeight: 700,
+            color: expectedSurplusPositive ? C.green : C.red,
+          }}
+        >
+          {expectedSurplus < 0 ? "-" : ""}${formatCurrency(expectedSurplus)}
+        </div>
+        <div
+          style={{
+            fontSize: "12px",
+            color: expectedSurplusPositive ? C.green : C.red,
+            marginTop: "4px",
+          }}
+        >
+          Income - Spent
+        </div>
+      </div>
+
+      <div
+        style={{
           background: leftoverPositive ? C.greenLight : C.redLight,
           border: `1.5px solid ${leftoverPositive ? "#bbf7d0" : "#fecaca"}`,
           borderRadius: "14px",
@@ -204,6 +247,15 @@ export default function SummaryCards({
         >
           {leftover < 0 ? "-" : ""}${formatCurrency(leftover)}
         </div>
+        <div
+          style={{
+            fontSize: "12px",
+            color: leftoverPositive ? C.green : C.red,
+            marginTop: "4px",
+          }}
+        >
+          Planned - Spent
+        </div>
         {totalPlanned > 0 && !leftoverPositive && (
           <div
             style={{
@@ -216,6 +268,36 @@ export default function SummaryCards({
             OVER BUDGET
           </div>
         )}
+      </div>
+
+      <div
+        style={neutralCardStyle}
+      >
+        <div
+          style={{
+            fontSize: "11px",
+            color: C.textLight,
+            letterSpacing: "2px",
+            marginBottom: "8px",
+            fontWeight: 600,
+          }}
+        >
+          MOST MONEY SPENT
+        </div>
+        <div
+          style={{
+            fontSize: mostMoneySpentCategory ? "24px" : "18px",
+            fontWeight: 700,
+            color: mostMoneySpentCategory ? C.text : C.textMid,
+            letterSpacing: "-0.3px",
+            lineHeight: 1.15,
+          }}
+        >
+          {mostMoneySpentCategory || "None yet"}
+        </div>
+        <div style={{ fontSize: "12px", color: C.textLight, marginTop: "4px" }}>
+          Category
+        </div>
       </div>
     </div>
   );
