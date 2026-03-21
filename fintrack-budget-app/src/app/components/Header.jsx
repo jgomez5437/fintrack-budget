@@ -4,8 +4,6 @@ import MonthPickerModal from "./MonthPickerModal";
 
 export default function Header({
   userEmail,
-  onSignOut,
-  isSigningOut = false,
   year,
   month,
   onPrevMonth,
@@ -14,6 +12,7 @@ export default function Header({
   theme,
   onToggleTheme,
   onGoToMonth,
+  onOpenSettings,
 }) {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
@@ -175,22 +174,24 @@ export default function Header({
               {userEmail}
             </div>
             <button
-              onClick={onSignOut}
-              disabled={isSigningOut}
+              onClick={onOpenSettings}
               style={{
-                border: "1.5px solid rgba(255,255,255,0.3)",
-                background: isSigningOut ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.18)",
+                background: "rgba(255,255,255,0.15)",
+                border: "none",
                 color: C.white,
-                borderRadius: "999px",
-                padding: "10px 14px",
-                fontSize: "13px",
-                fontWeight: 700,
-                cursor: isSigningOut ? "wait" : "pointer",
-                transition: "all 0.2s",
+                borderRadius: "50%",
+                width: "32px",
+                height: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "background 0.2s",
               }}
               className="nav-btn"
+              title="Settings"
             >
-              {isSigningOut ? "Signing Out..." : "Sign Out"}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
           </div>
         )}

@@ -37,6 +37,7 @@ import AddCategoryModal from "./app/components/AddCategoryModal";
 import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
 import SkeletonDashboard from "./app/components/SkeletonDashboard";
 import NamePromptModal from "./app/components/NamePromptModal";
+import SettingsModal from "./app/components/SettingsModal";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -82,6 +83,7 @@ export default function BudgetApp() {
   const [month, setMonth] = useState(now.getMonth());
   const [firstName, setFirstName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [data, setData] = useState(() => defaultData());
   const [newCat, setNewCat] = useState({ name: "", amount: "" });
   const [editingId, setEditingId] = useState(null);
@@ -1222,6 +1224,15 @@ export default function BudgetApp() {
     >
       <GlobalStyles />
 
+      {showSettings && (
+        <SettingsModal 
+          session={session} 
+          onClose={() => setShowSettings(false)} 
+          onSignOut={handleSignOut}
+          isSigningOut={signOutPending}
+        />
+      )}
+
       {showNamePrompt && (
         <NamePromptModal onSaveName={saveFirstName} />
       )}
@@ -1267,10 +1278,9 @@ export default function BudgetApp() {
         onGoToMonth={goToMonth}
         canGoPrev={canGoPrev}
         userEmail={session.user.email}
-        onSignOut={handleSignOut}
-        isSigningOut={signOutPending}
         theme={theme}
         onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>

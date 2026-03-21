@@ -1,5 +1,5 @@
 import { defaultData } from "../constants";
-import { ensureSupabaseSession, getSupabase } from "./supabase";
+import { ensureSupabaseSession, getSupabase, onAuthStateChange } from "./supabase";
 
 export const LAST_CATEGORY_KEY = "fintrack-last-cat";
 export const CATEGORY_ALERT_COUNT_KEY = "fintrack-category-alert-count";
@@ -14,6 +14,42 @@ const preferenceColumnsByKey = {
 function isMissingPreferenceColumnError(error, columnName) {
   const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
   return message.includes(columnName.toLowerCase()) && message.includes("column");
+}
+
+let cachedEffectiveUserId = null;
+
+export function clearStorageCache() {
+  cachedEffectiveUserId = null;
+}
+
+if (typeof window !== "undefined") {
+  onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      clearStorageCache();
+    }
+  });
+}
+
+async function getEffectiveUserId(supabase, sessionUserId) {
+  if (cachedEffectiveUserId) return cachedEffectiveUserId;
+
+  try {
+    const { data } = await supabase
+      .from("account_links")
+      .select("primary_user_id")
+      .eq("linked_user_id", sessionUserId)
+      .maybeSingle();
+
+    if (data?.primary_user_id) {
+      cachedEffectiveUserId = data.primary_user_id;
+      return cachedEffectiveUserId;
+    }
+  } catch (e) {
+    // Ignore if table doesn't exist yet
+  }
+
+  cachedEffectiveUserId = sessionUserId;
+  return cachedEffectiveUserId;
 }
 
 const browserStorage = {
@@ -63,8 +99,10 @@ function createSupabaseStorage() {
         if (!supabase) return browserStorage.get(key);
 
         const session = await ensureSupabaseSession();
-        const userId = session?.user?.id;
-        if (!userId) return browserStorage.get(key);
+        const sessionUserId = session?.user?.id;
+        if (!sessionUserId) return browserStorage.get(key);
+
+        const userId = await getEffectiveUserId(supabase, sessionUserId);
 
         const budgetKey = parseBudgetKey(key);
         if (budgetKey) {
@@ -133,11 +171,13 @@ function createSupabaseStorage() {
         }
 
         const session = await ensureSupabaseSession();
-        const userId = session?.user?.id;
-        if (!userId) {
+        const sessionUserId = session?.user?.id;
+        if (!sessionUserId) {
           await browserStorage.set(key, value);
           return;
         }
+
+        const userId = await getEffectiveUserId(supabase, sessionUserId);
 
         const budgetKey = parseBudgetKey(key);
         if (budgetKey) {
@@ -203,8 +243,9 @@ function createSupabaseStorage() {
         const supabase = getSupabase();
         if (supabase) {
           const session = await ensureSupabaseSession();
-          const userId = session?.user?.id;
-          if (userId) {
+          const sessionUserId = session?.user?.id;
+          if (sessionUserId) {
+            const userId = await getEffectiveUserId(supabase, sessionUserId);
             const { data, error } = await supabase
               .from("monthly_budgets")
               .select("month, year")
