@@ -1,7 +1,7 @@
 import { getSupabase } from "./supabase";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-2.5-flash-preview-04-17";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
 // ── Date Helpers ──────────────────────────────────────────────────────────────
@@ -83,32 +83,21 @@ export async function getAllSummaries(userId) {
 
 // ── Gemini Prompt ─────────────────────────────────────────────────────────────
 
-function buildPrompt(transactions, categories, weekStart, weekEnd) {
-  // Filter transactions to only those within the week window
-  const weekTxs = transactions.filter((t) => {
-    if (!t.date) return false;
-    return t.date >= weekStart && t.date <= weekEnd;
-  });
-
-  // Aggregate spent by category
-  const spentMap = {};
-  weekTxs.forEach((t) => {
-    const key = t.categoryId ?? "__uncategorized__";
-    spentMap[key] = (spentMap[key] || 0) + parseFloat(t.amount || 0);
-  });
-
-  const totalSpent = Object.values(spentMap).reduce((s, v) => s + v, 0);
-
+function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd) {
   const categoryLines = categories
     .map((c) => {
-      const spent = spentMap[c.id] || 0;
+      const spent = spentByCategory[c.id] || 0;
       const budget = parseFloat(c.amount) || 0;
-      const overUnder = budget > 0 ? (spent > budget ? `⚠️ $${(spent - budget).toFixed(2)} over` : `$${(budget - spent).toFixed(2)} under`) : "";
-      return `• ${c.name}: spent $${spent.toFixed(2)}${budget > 0 ? ` / $${budget.toFixed(2)} budget ${overUnder}` : ""}`;
+      const overUnder = budget > 0
+        ? (spent > budget
+          ? `⚠️ $${(spent - budget).toFixed(2)} over budget`
+          : `$${(budget - spent).toFixed(2)} under budget`)
+        : "";
+      return `• ${c.name}: spent $${spent.toFixed(2)}${budget > 0 ? ` / $${budget.toFixed(2)} budgeted ${overUnder}` : ""}`;
     })
     .join("\n");
 
-  const uncatSpent = spentMap["__uncategorized__"] || 0;
+  const uncatSpent = spentByCategory["__uncategorized__"] || spentByCategory[null] || spentByCategory[undefined] || 0;
   const uncatLine = uncatSpent > 0 ? `• Uncategorized: $${uncatSpent.toFixed(2)}\n` : "";
 
   return `You are a personal financial advisor assistant inside a budgeting app called FinTrack. \
@@ -117,11 +106,10 @@ Your job is to give a brief, friendly, and specific weekly spending summary to t
 Write 3–5 sentences. Be specific — mention dollar amounts. \
 Focus most of your commentary on the Groceries and Miscellaneous categories if they have activity. \
 If spending is high, call it out honestly but encouragingly. \
-End with one actionable tip the user can take this week to improve.
+End with one actionable tip the user can take to improve.
 
 Week period: ${weekStart} through ${weekEnd}
-Total transactions this week: ${weekTxs.length}
-Total spent: $${totalSpent.toFixed(2)}
+Total spent this period: $${totalSpent.toFixed(2)}
 
 Spending by category:
 ${categoryLines}
@@ -135,7 +123,7 @@ Please write the summary now (no preamble, just the summary paragraph):`;
  * Calls Gemini, saves to DB, returns the saved row.
  * Uses effectiveUserId for shared budgets (secondary user routes to primary).
  */
-export async function generateAndSaveSummary({ userId, transactions, categories }) {
+export async function generateAndSaveSummary({ userId, spentByCategory, totalSpent, categories }) {
   if (!GEMINI_API_KEY) {
     console.error("[weeklySummary] GEMINI_API_KEY not set in environment.");
     return null;
@@ -147,7 +135,7 @@ export async function generateAndSaveSummary({ userId, transactions, categories 
   const now = new Date();
   const { week_start, week_end, generated_on } = getWeekWindow(now);
 
-  const prompt = buildPrompt(transactions, categories, week_start, week_end);
+  const prompt = buildPrompt(spentByCategory, categories, totalSpent, week_start, week_end);
 
   let summaryText;
   try {
@@ -158,7 +146,7 @@ export async function generateAndSaveSummary({ userId, transactions, categories 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 512,
+          maxOutputTokens: 1024,
         },
       }),
     });

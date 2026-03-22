@@ -283,7 +283,8 @@ export default function BudgetApp() {
       setIsGeneratingSummary(true);
       const result = await generateAndSaveSummary({
         userId,
-        transactions: data.transactions || [],
+        spentByCategory,
+        totalSpent,
         categories: data.categories || [],
       });
       if (!isMounted) return;
@@ -1272,7 +1273,8 @@ export default function BudgetApp() {
             setIsGeneratingSummary(true);
             const result = await generateAndSaveSummary({
               userId: session.user.id,
-              transactions: data.transactions || [],
+              spentByCategory,
+              totalSpent,
               categories: data.categories || [],
             });
             setIsGeneratingSummary(false);

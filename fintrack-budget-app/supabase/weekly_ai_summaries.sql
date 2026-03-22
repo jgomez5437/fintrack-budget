@@ -33,3 +33,8 @@ create policy "Users can insert own summaries"
 create policy "Users can delete own summaries"
   on weekly_ai_summaries for delete
   using (auth.uid() = user_id);
+
+create policy "Users can update own summaries"
+  on weekly_ai_summaries for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
