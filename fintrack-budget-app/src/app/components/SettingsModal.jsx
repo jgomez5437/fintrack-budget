@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { C } from "../constants";
 import { getSupabase } from "../services/supabase";
 
-export default function SettingsModal({ onClose, session, onSignOut, isSigningOut }) {
+export default function SettingsModal({ onClose, session, onSignOut, isSigningOut, onGenerateSummary, isGeneratingSummary }) {
   const [loading, setLoading] = useState(true);
   const [activeCode, setActiveCode] = useState(null);
   const [isLinked, setIsLinked] = useState(false);
@@ -336,7 +336,33 @@ export default function SettingsModal({ onClose, session, onSignOut, isSigningOu
             </>
           )}
 
-          <div style={{ marginTop: "32px", borderTop: `1px solid ${C.border}`, paddingTop: "24px" }}>
+          <div style={{ marginTop: "24px", borderTop: `1px solid ${C.border}`, paddingTop: "24px" }}>
+            <div style={{ fontSize: "16px", fontWeight: 700, color: C.text, marginBottom: "6px" }}>AI Weekly Summary</div>
+            <div style={{ fontSize: "13px", color: C.textMid, lineHeight: 1.5, marginBottom: "14px" }}>
+              Normally generates automatically each Sunday. Tap below to generate one right now with this week's data.
+            </div>
+            <button
+              onClick={onGenerateSummary}
+              disabled={isGeneratingSummary || loading}
+              style={{
+                width: "100%",
+                padding: "13px",
+                background: `linear-gradient(135deg, #1e50d4 0%, #6366f1 100%)`,
+                color: "#fff",
+                border: "none",
+                borderRadius: "10px",
+                fontWeight: 700,
+                fontSize: "14px",
+                cursor: isGeneratingSummary || loading ? "wait" : "pointer",
+                opacity: isGeneratingSummary || loading ? 0.7 : 1,
+                transition: "all 0.2s",
+              }}
+            >
+              {isGeneratingSummary ? "Generating…" : "✦ Generate Summary Now"}
+            </button>
+          </div>
+
+          <div style={{ marginTop: "24px", borderTop: `1px solid ${C.border}`, paddingTop: "24px" }}>
             <button
               onClick={onSignOut}
               disabled={isSigningOut || loading}

@@ -1267,6 +1267,17 @@ export default function BudgetApp() {
           onClose={() => setShowSettings(false)} 
           onSignOut={handleSignOut}
           isSigningOut={signOutPending}
+          isGeneratingSummary={isGeneratingSummary}
+          onGenerateSummary={async () => {
+            setIsGeneratingSummary(true);
+            const result = await generateAndSaveSummary({
+              userId: session.user.id,
+              transactions: data.transactions || [],
+              categories: data.categories || [],
+            });
+            setIsGeneratingSummary(false);
+            if (result) { setWeeklySummary(result); setShowSettings(false); setShowWeeklySummary(true); }
+          }}
         />
       )}
 
