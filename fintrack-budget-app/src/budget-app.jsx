@@ -131,6 +131,7 @@ export default function BudgetApp() {
   const [weeklySummary, setWeeklySummary] = useState(null);       // today's row or null
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const incomeRef = useRef(null);
   const savingsRef = useRef(null);
@@ -278,7 +279,12 @@ export default function BudgetApp() {
     async function checkAndGenerate() {
       const existing = await getTodaysSummary(userId);
       if (!isMounted) return;
-      if (existing) { setWeeklySummary(existing); return; }
+      if (existing) {
+        setWeeklySummary(existing);
+        const key = `weekly-banner-dismissed-${userId}-${existing.generated_on}`;
+        if (localStorage.getItem(key)) setBannerDismissed(true);
+        return;
+      }
 
       setIsGeneratingSummary(true);
       const result = await generateAndSaveSummary({
@@ -286,6 +292,7 @@ export default function BudgetApp() {
         spentByCategory,
         totalSpent,
         categories: data.categories || [],
+        transactions,
       });
       if (!isMounted) return;
       setIsGeneratingSummary(false);
@@ -591,6 +598,9 @@ export default function BudgetApp() {
       setUncategorizedAssignments({});
       setUncategorizedSaveSuccess(false);
       setBudgetLoaded(false);
+      setShowSettings(false);
+      setWeeklySummary(null);
+      setBannerDismissed(false);
       authCycleRef.current = { userId: null, counted: false };
     } catch (error) {
       setAuthError(error.message || "Unable to sign out right now.");
@@ -1276,6 +1286,7 @@ export default function BudgetApp() {
               spentByCategory,
               totalSpent,
               categories: data.categories || [],
+              transactions,
             });
             setIsGeneratingSummary(false);
             if (result) { setWeeklySummary(result); setShowSettings(false); setShowWeeklySummary(true); }
@@ -1408,36 +1419,48 @@ export default function BudgetApp() {
           </div>
         )}
 
-        {/* Weekly summary banner */}
-        {weeklySummary && (
-          <div
-            className="fade-up"
-            onClick={() => setShowWeeklySummary(true)}
-            style={{
-              cursor: "pointer",
-              marginBottom: "16px",
-              padding: "12px 16px",
-              background: `linear-gradient(90deg, ${C.blue} 0%, #6366f1 100%)`,
-              borderRadius: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              boxShadow: "0 4px 16px rgba(30,80,212,0.2)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none">
-                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
-              </svg>
-              <span style={{ fontSize: "14px", fontWeight: 700, color: C.white }}>
-                Your weekly summary is ready →
+        {/* Weekly summary banner — per-user dismiss via localStorage */}
+        {weeklySummary && !bannerDismissed && (() => {
+          // Check if this specific user already dismissed this week's banner
+          const dismissKey = `weekly-banner-dismissed-${session?.user?.id}-${weeklySummary.generated_on}`;
+          if (typeof window !== 'undefined' && localStorage.getItem(dismissKey)) {
+            return null;
+          }
+          return (
+            <div
+              className="fade-up"
+              onClick={() => {
+                const dismissKey = `weekly-banner-dismissed-${session?.user?.id}-${weeklySummary.generated_on}`;
+                localStorage.setItem(dismissKey, '1');
+                setBannerDismissed(true);
+                setShowWeeklySummary(true);
+              }}
+              style={{
+                cursor: "pointer",
+                marginBottom: "16px",
+                padding: "12px 16px",
+                background: `linear-gradient(90deg, ${C.blue} 0%, #6366f1 100%)`,
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                boxShadow: "0 4px 16px rgba(30,80,212,0.2)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none">
+                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+                </svg>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: C.white }}>
+                  Your weekly summary is ready →
+                </span>
+              </div>
+              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
+                Tap to read
               </span>
             </div>
-            <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
-              Tap to read
-            </span>
-          </div>
-        )}
+          );
+        })()}
 
         <SummaryCards
           editingIncome={editingIncome}

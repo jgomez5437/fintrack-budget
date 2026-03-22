@@ -83,7 +83,7 @@ export async function getAllSummaries(userId) {
 
 // ── Gemini Prompt ─────────────────────────────────────────────────────────────
 
-function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd) {
+function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd, transactions = []) {
   const categoryLines = categories
     .map((c) => {
       const spent = spentByCategory[c.id] || 0;
@@ -100,21 +100,59 @@ function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd
   const uncatSpent = spentByCategory["__uncategorized__"] || spentByCategory[null] || spentByCategory[undefined] || 0;
   const uncatLine = uncatSpent > 0 ? `• Uncategorized: $${uncatSpent.toFixed(2)}\n` : "";
 
-  return `You are a personal financial advisor assistant inside a budgeting app called FinTrack. \
-Your job is to give a brief, friendly, and specific weekly spending summary to the user based on their transaction data.
+  // Build per-transaction detail for Groceries and Miscellaneous
+  const focusNames = ["groceri", "misc"];
+  const focusCatIds = new Set(
+    categories
+      .filter((c) => focusNames.some((kw) => c.name.toLowerCase().includes(kw)))
+      .map((c) => c.id)
+  );
+  const focusTxLines = categories
+    .filter((c) => focusCatIds.has(c.id))
+    .map((c) => {
+      const catTxs = transactions.filter((t) => String(t.categoryId) === String(c.id));
+      if (catTxs.length === 0) return null;
+      const txList = catTxs
+        .map((t) => `    - ${t.name}: $${parseFloat(t.amount).toFixed(2)}`)
+        .join("\n");
+      return `  ${c.name} transactions:\n${txList}`;
+    })
+    .filter(Boolean)
+    .join("\n");
 
-Write 3–5 sentences. Be specific — mention dollar amounts. \
-Focus most of your commentary on the Groceries and Miscellaneous categories if they have activity. \
-If spending is high, call it out honestly but encouragingly. \
-End with one actionable tip the user can take to improve.
+  const txSection = focusTxLines
+    ? `\nIndividual transactions for key categories:\n${focusTxLines}\n`
+    : "";
+
+  return `You are a helpful financial assistant.
+
+Write a short weekly summary (3-4 sentences max).
+
+Priorities:
+- Focus mainly on groceries and miscellaneous spending
+- Highlight if those categories went over budget or felt unusually high
+- Simplify numbers (round when possible, avoid too many exact figures)
+- Mention 1–2 specific merchants ONLY if they help explain the behavior
+
+Tone:
+- Natural and conversational (like one person talking to another)
+- Slightly blunt but supportive
+- Avoid sounding like a report or lecture
+
+Guidelines:
+- Do NOT list too many numbers
+- Do NOT give generic advice
+- Instead, give one specific, realistic nudge based on the data
+
+Goal:
+Make it feel like a quick, honest check-in that sparks a real conversation.
 
 Week period: ${weekStart} through ${weekEnd}
 Total spent this period: $${totalSpent.toFixed(2)}
 
 Spending by category:
 ${categoryLines}
-${uncatLine}
-Please write the summary now (no preamble, just the summary paragraph):`;
+${uncatLine}${txSection}`;
 }
 
 // ── Main Generator ────────────────────────────────────────────────────────────
@@ -123,7 +161,7 @@ Please write the summary now (no preamble, just the summary paragraph):`;
  * Calls Gemini, saves to DB, returns the saved row.
  * Uses effectiveUserId for shared budgets (secondary user routes to primary).
  */
-export async function generateAndSaveSummary({ userId, spentByCategory, totalSpent, categories }) {
+export async function generateAndSaveSummary({ userId, spentByCategory, totalSpent, categories, transactions = [] }) {
   if (!GEMINI_API_KEY) {
     console.error("[weeklySummary] GEMINI_API_KEY not set in environment.");
     return null;
@@ -135,7 +173,7 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
   const now = new Date();
   const { week_start, week_end, generated_on } = getWeekWindow(now);
 
-  const prompt = buildPrompt(spentByCategory, categories, totalSpent, week_start, week_end);
+  const prompt = buildPrompt(spentByCategory, categories, totalSpent, week_start, week_end, transactions);
 
   let summaryText;
   try {
@@ -146,7 +184,7 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 2048,
         },
       }),
     });
