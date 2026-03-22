@@ -260,8 +260,6 @@ export default function BudgetTab({
             {incomeCategories.map((ic, index) => {
               const estimated = parseFloat(ic.amount) || 0;
               const actual = earnedByCategory[ic.id] || 0;
-              const pct = estimated > 0 ? Math.min((actual / estimated) * 100, 100) : 0;
-              const barColor = actual >= estimated ? C.green : C.blue;
 
               const isDragging = dragIndex === index && dragStateRef.current.type === "income";
               const isDropTarget = dropIndex === index && dragStateRef.current.type === "income" && dragIndex !== index;
@@ -284,23 +282,29 @@ export default function BudgetTab({
                     position: "relative",
                   }}
                 >
-                  <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
-                    <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
-                      <circle cx="22" cy="22" r="18" fill="none" stroke={C.border} strokeWidth="4" />
-                      <circle
-                        cx="22" cy="22" r="18" fill="none" stroke={barColor} strokeWidth="4"
-                        strokeLinecap="round" strokeDasharray={113.1}
-                        strokeDashoffset={113.1 - (pct / 100) * 113.1}
-                        style={{ transition: "stroke-dashoffset 0.5s ease" }}
-                      />
+                  <div
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    aria-hidden
+                  >
+                    <svg
+                      width="32"
+                      height="32"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={C.green}
+                      strokeWidth="2.25"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
-                    <div style={{
-                      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "11px", fontWeight: 700, color: barColor,
-                    }}>
-                      {Math.round(pct)}%
-                    </div>
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>

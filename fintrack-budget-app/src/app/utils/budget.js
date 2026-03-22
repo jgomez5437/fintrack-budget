@@ -42,16 +42,9 @@ export function buildBudgetSummary(data, month = new Date().getMonth(), year = n
     }
   });
 
-  const totalSpent = transactions.reduce(
-    (sum, transaction) => {
-      const amt = parseFloat(transaction.amount) || 0;
-      // If it's income, it reduces total spent (unless we want to track gross spending)
-      // Actually, if it's assigned to an income category, we might want to exclude it from totalSpent
-      // or treat it as negative. Let's treat it as negative for now to show "net spending".
-      return sum + amt;
-    },
-    0,
-  );
+  // Spending only: income transactions are stored as negative amounts, so summing raw
+  // transaction totals mixes expenses with income and breaks spend % / leftover math.
+  const totalSpent = Object.values(spentByCategory).reduce((sum, v) => sum + v, 0);
 
   // Dynamic Income Calculation: Sum of (Actual Earned if > 0, else Estimated)
   const totalIncome = incomeCategories.reduce((sum, ic) => {
@@ -71,7 +64,8 @@ export function buildBudgetSummary(data, month = new Date().getMonth(), year = n
   const projectedMonthEndSpent =
     elapsedDays > 0 ? (totalSpent / elapsedDays) * daysInMonth : 0;
   
-  const spendPct = totalIncome > 0 ? Math.min((totalSpent / totalIncome) * 100, 100) : 0;
+  const spendPct =
+    totalIncome > 0 ? Math.min(Math.max((totalSpent / totalIncome) * 100, 0), 100) : 0;
   const leftoverPositive = leftover >= 0;
   const expectedSurplusPositive = expectedSurplus >= 0;
   const barColor = spendPct > 90 ? C.red : spendPct > 70 ? C.orange : C.green;
