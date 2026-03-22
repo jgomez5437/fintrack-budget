@@ -6,6 +6,7 @@ import { inputStyle, selectStyle } from "../styles";
 
 export default function TransactionsTab({
   categories,
+  incomeCategories = [],
   transactions,
   uncategorizedTransactions,
   showUncategorizedSection,
@@ -164,10 +165,12 @@ export default function TransactionsTab({
         <TransactionDetailsModal
           transaction={activeTransaction}
           categories={categories}
+          incomeCategories={incomeCategories}
           categoryId={activeCategoryId}
           onCategoryChange={setActiveCategoryId}
           onSave={saveTransactionCategory}
           onClose={closeTransactionDetails}
+          formatCurrency={formatCurrency}
         />
       )}
 
@@ -210,7 +213,9 @@ export default function TransactionsTab({
           {!uncategorizedSaveSuccess && (
             <>
               <div style={{ display: "grid", gap: "10px" }}>
-                {uncategorizedTransactions.map((transaction) => (
+                {uncategorizedTransactions.map((transaction) => {
+                  const category = getCategoryById(transaction.categoryId);
+                  return (
                   <div
                     key={transaction.id}
                     style={{
@@ -265,7 +270,9 @@ export default function TransactionsTab({
                         {transaction.name}
                       </div>
                       <div style={{ fontSize: "12px", color: C.textMid, marginTop: "3px" }}>
-                        {transaction.date} | -${formatCurrency(parseFloat(transaction.amount))}
+                        {transaction.date} | <span style={{ color: parseFloat(transaction.amount) < 0 ? C.green : C.text, fontWeight: 700 }}>
+                          {parseFloat(transaction.amount) < 0 ? "+" : ""}${formatCurrency(Math.abs(parseFloat(transaction.amount)))}
+                        </span>
                       </div>
                     </div>
 
@@ -277,14 +284,25 @@ export default function TransactionsTab({
                       style={selectStyle}
                     >
                       <option value="">Choose category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
+                      {parseFloat(transaction.amount) < 0 && (
+                        <optgroup label="Income Sources">
+                          {incomeCategories.map((ic) => (
+                            <option key={ic.id} value={ic.id}>
+                              {ic.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label={parseFloat(transaction.amount) < 0 ? "Refunds (Categories)" : "Budget Categories"}>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
-                ))}
+                );})}
               </div>
 
               <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
@@ -494,18 +512,25 @@ export default function TransactionsTab({
                 }
                 style={selectStyle}
               >
-                <option value="" disabled>
-                  Select a category
-                </option>
-                {categories.map((category) => {
-                  const spent = spentByCategory[category.id] || 0;
-                  const budget = parseFloat(category.amount) || 0;
-                  return (
-                    <option key={category.id} value={category.id}>
-                      {category.name} (${formatCurrency(budget - spent)} left)
-                    </option>
-                  );
-                })}
+                <option value="">Category (Optional)</option>
+                  <optgroup label="Income Sources">
+                    {incomeCategories.map((ic) => (
+                      <option key={ic.id} value={ic.id}>
+                        {ic.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                <optgroup label="Budget Categories">
+                  {categories.map((category) => {
+                    const budgetAmt = parseFloat(category.amount) || 0;
+                    const spentAmt = spentByCategory[category.id] || 0;
+                    return (
+                      <option key={category.id} value={category.id}>
+                        {category.name} (${formatCurrency(budgetAmt - spentAmt)} left)
+                      </option>
+                    );
+                  })}
+                </optgroup>
               </select>
             ) : (
               <div style={{ display: "grid", gap: "10px" }}>
@@ -1242,8 +1267,13 @@ export default function TransactionsTab({
                     </div>
                   </div>
 
-                  <div style={{ fontSize: "15px", color: C.red, fontWeight: 700, flexShrink: 0 }}>
-                    -${formatCurrency(parseFloat(transaction.amount))}
+                  <div style={{ 
+                    fontSize: "15px", 
+                    color: parseFloat(transaction.amount) < 0 ? C.green : C.red, 
+                    fontWeight: 700, 
+                    flexShrink: 0 
+                  }}>
+                    {parseFloat(transaction.amount) < 0 ? "+" : ""}${formatCurrency(Math.abs(parseFloat(transaction.amount)))}
                   </div>
 
                   <div

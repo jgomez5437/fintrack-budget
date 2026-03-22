@@ -5,7 +5,9 @@ import { C } from "../constants";
 export default function TransactionDetailsModal({
   transaction,
   categories,
+  incomeCategories = [],
   categoryId,
+  formatCurrency,
   onCategoryChange,
   onSave,
   onClose,
@@ -131,8 +133,13 @@ export default function TransactionDetailsModal({
               <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
                 Amount
               </div>
-              <div style={{ marginTop: "4px", color: C.red, fontSize: "18px", fontWeight: 700 }}>
-                -${transaction.amount}
+              <div style={{
+                marginTop: "4px",
+                color: parseFloat(transaction.amount) < 0 ? C.green : C.red,
+                fontSize: "18px",
+                fontWeight: 700
+              }}>
+                {parseFloat(transaction.amount) < 0 ? "+" : ""}${formatCurrency(Math.abs(parseFloat(transaction.amount)))}
               </div>
             </div>
           </div>
@@ -159,11 +166,20 @@ export default function TransactionDetailsModal({
                   }}
                 >
                   <option value="">Uncategorized</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
+                  <optgroup label="Income Sources">
+                    {incomeCategories.map((ic) => (
+                      <option key={ic.id} value={ic.id}>
+                        {ic.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Budget Categories">
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
                 <button
                   onClick={() => setIsSplit(true)}
@@ -232,7 +248,7 @@ export default function TransactionDetailsModal({
                     style={{
                       background: C.surface,
                       border: `1.5px solid ${C.border}`,
-                      color: C.red,
+                      color: parseFloat(split1.amount) < 0 ? C.green : C.red,
                       padding: "10px",
                       borderRadius: "10px",
                       fontSize: "13px",
@@ -265,7 +281,7 @@ export default function TransactionDetailsModal({
                     style={{
                       background: C.surface,
                       border: `1.5px solid ${C.border}`,
-                      color: C.red,
+                      color: parseFloat(split2.amount) < 0 ? C.green : C.red,
                       padding: "10px",
                       borderRadius: "10px",
                       fontSize: "13px",

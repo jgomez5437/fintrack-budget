@@ -7,35 +7,61 @@ const ALERT_CATEGORY_NAMES = new Set([
 ]);
 
 export function buildBudgetSummary(data, month = new Date().getMonth(), year = new Date().getFullYear()) {
-  const income = parseFloat(data.income) || 0;
+  const incomeCategories = data.incomeCategories || [];
   const categories = data.categories || [];
   const transactions = data.transactions || [];
+  
   const totalPlanned = categories.reduce(
     (sum, category) => sum + (parseFloat(category.amount) || 0),
     0,
   );
 
-  const spentByCategory = transactions.reduce((accumulator, transaction) => {
+  const spentByCategory = {};
+  const earnedByCategory = {};
+
+  transactions.forEach((transaction) => {
     if (transaction.isSplit && Array.isArray(transaction.splits)) {
       transaction.splits.forEach((split) => {
         const catId = split.categoryId;
         const amt = parseFloat(split.amount) || 0;
-        accumulator[catId] = (accumulator[catId] || 0) + amt;
+        // If catId is in incomeCategories, it's earned
+        if (incomeCategories.some(ic => ic.id === parseInt(catId, 10))) {
+          earnedByCategory[catId] = (earnedByCategory[catId] || 0) + Math.abs(amt);
+        } else {
+          spentByCategory[catId] = (spentByCategory[catId] || 0) + amt;
+        }
       });
     } else {
-      accumulator[transaction.categoryId] =
-        (accumulator[transaction.categoryId] || 0) +
-        (parseFloat(transaction.amount) || 0);
+      const catId = transaction.categoryId;
+      const amt = parseFloat(transaction.amount) || 0;
+      if (incomeCategories.some(ic => ic.id === parseInt(catId, 10))) {
+        earnedByCategory[catId] = (earnedByCategory[catId] || 0) + Math.abs(amt);
+      } else {
+        spentByCategory[catId] = (spentByCategory[catId] || 0) + amt;
+      }
     }
-    return accumulator;
-  }, {});
+  });
 
   const totalSpent = transactions.reduce(
-    (sum, transaction) => sum + (parseFloat(transaction.amount) || 0),
+    (sum, transaction) => {
+      const amt = parseFloat(transaction.amount) || 0;
+      // If it's income, it reduces total spent (unless we want to track gross spending)
+      // Actually, if it's assigned to an income category, we might want to exclude it from totalSpent
+      // or treat it as negative. Let's treat it as negative for now to show "net spending".
+      return sum + amt;
+    },
     0,
   );
+
+  // Dynamic Income Calculation: Sum of (Actual Earned if > 0, else Estimated)
+  const totalIncome = incomeCategories.reduce((sum, ic) => {
+    const actual = earnedByCategory[ic.id] || 0;
+    const estimate = parseFloat(ic.amount) || 0;
+    return sum + (actual > 0 ? actual : estimate);
+  }, 0);
+
   const leftover = totalPlanned - totalSpent;
-  const expectedSurplus = income - totalPlanned;
+  const expectedSurplus = totalIncome - totalPlanned;
   const now = new Date();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const isCurrentMonth = now.getMonth() === month && now.getFullYear() === year;
@@ -44,17 +70,20 @@ export function buildBudgetSummary(data, month = new Date().getMonth(), year = n
   const elapsedDays = isPastMonth ? daysInMonth : isCurrentMonth ? now.getDate() : 0;
   const projectedMonthEndSpent =
     elapsedDays > 0 ? (totalSpent / elapsedDays) * daysInMonth : 0;
-  const spendPct = income > 0 ? Math.min((totalSpent / income) * 100, 100) : 0;
+  
+  const spendPct = totalIncome > 0 ? Math.min((totalSpent / totalIncome) * 100, 100) : 0;
   const leftoverPositive = leftover >= 0;
   const expectedSurplusPositive = expectedSurplus >= 0;
   const barColor = spendPct > 90 ? C.red : spendPct > 70 ? C.orange : C.green;
   const pastNames = [...new Set(transactions.map((transaction) => transaction.name))];
 
   return {
-    income,
+    income: totalIncome,
+    incomeCategories,
     totalPlanned,
     transactions,
     spentByCategory,
+    earnedByCategory,
     totalSpent,
     leftover,
     expectedSurplus,

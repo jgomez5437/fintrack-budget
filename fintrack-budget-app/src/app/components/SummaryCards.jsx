@@ -1,16 +1,10 @@
 import { C } from "../constants";
 
 export default function SummaryCards({
-  editingIncome,
+  onScrollToIncome,
   expectedSurplus,
   expectedSurplusPositive,
   income,
-  incomeInput,
-  incomeRef,
-  onStartIncomeEdit,
-  onIncomeInputChange,
-  onSaveIncome,
-  onCancelIncomeEdit,
   projectedMonthEndSpent,
   totalPlanned,
   totalSpent,
@@ -49,12 +43,12 @@ export default function SummaryCards({
     >
       <div
         className="income-card"
-        onClick={!editingIncome ? onStartIncomeEdit : undefined}
+        onClick={onScrollToIncome}
         style={{
           background: C.blue,
           borderRadius: "14px",
           padding: "20px",
-          cursor: editingIncome ? "default" : "pointer",
+          cursor: "pointer",
           position: "relative",
           transition: "box-shadow 0.2s",
           border: `1.5px solid ${C.blue}`,
@@ -72,76 +66,46 @@ export default function SummaryCards({
         >
           INCOME
         </div>
-        {editingIncome ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ color: C.gold, fontSize: "20px", fontWeight: 700 }}>
-              $
+        <div
+          style={{
+            fontSize: "26px",
+            fontWeight: 700,
+            color: C.white,
+            letterSpacing: "-0.5px",
+          }}
+        >
+          {income > 0 ? (
+            `$${formatCurrency(income)}`
+          ) : (
+            <span
+              style={{
+                color: "rgba(255,255,255,0.4)",
+                fontSize: "16px",
+                fontWeight: 500,
+              }}
+            >
+              Set Income
             </span>
-            <input
-              ref={incomeRef}
-              type="number"
-              value={incomeInput}
-              onChange={(event) => onIncomeInputChange(event.target.value)}
-              onBlur={onSaveIncome}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") onSaveIncome();
-                if (event.key === "Escape") onCancelIncomeEdit();
-              }}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: C.white,
-                fontSize: "26px",
-                fontWeight: 700,
-                width: "100%",
-                minWidth: 0,
-              }}
-            />
-          </div>
-        ) : (
-          <>
-            <div
-              style={{
-                fontSize: "26px",
-                fontWeight: 700,
-                color: C.white,
-                letterSpacing: "-0.5px",
-              }}
-            >
-              {income > 0 ? (
-                `$${formatCurrency(income)}`
-              ) : (
-                <span
-                  style={{
-                    color: "rgba(255,255,255,0.4)",
-                    fontSize: "16px",
-                    fontWeight: 500,
-                  }}
-                >
-                  Tap to set
-                </span>
-              )}
-            </div>
-            <div
-              className="edit-hint"
-              style={{
-                position: "absolute",
-                top: "14px",
-                right: "14px",
-                fontSize: "10px",
-                background: "rgba(255,255,255,0.2)",
-                color: C.white,
-                padding: "2px 7px",
-                borderRadius: "4px",
-                letterSpacing: "1px",
-                opacity: 0,
-                transition: "opacity 0.2s",
-              }}
-            >
-              EDIT
-            </div>
-          </>
-        )}
+          )}
+        </div>
+        <div
+          className="edit-hint"
+          style={{
+            position: "absolute",
+            top: "14px",
+            right: "14px",
+            fontSize: "10px",
+            background: "rgba(255,255,255,0.2)",
+            color: C.white,
+            padding: "2px 7px",
+            borderRadius: "4px",
+            letterSpacing: "1px",
+            opacity: 0,
+            transition: "opacity 0.2s",
+          }}
+        >
+          VIEW
+        </div>
       </div>
 
       <div

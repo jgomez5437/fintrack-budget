@@ -34,6 +34,7 @@ import ImportReviewModal from "./app/components/ImportReviewModal";
 import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
 import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
 import AddCategoryModal from "./app/components/AddCategoryModal";
+import AddIncomeModal from "./app/components/AddIncomeModal";
 import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
 import SkeletonDashboard from "./app/components/SkeletonDashboard";
 import NamePromptModal from "./app/components/NamePromptModal";
@@ -63,7 +64,11 @@ function getPreviousMonthTarget(month, year) {
 
 function cloneBudgetSetup(sourceData) {
   return {
-    income: sourceData.income ?? "",
+    incomeCategories: (sourceData.incomeCategories || []).map((ic) => ({
+      id: ic.id,
+      name: ic.name,
+      amount: ic.amount,
+    })),
     categories: (sourceData.categories || []).map((category) => ({
       id: category.id,
       name: category.name,
@@ -92,6 +97,8 @@ export default function BudgetApp() {
   const [showSettings, setShowSettings] = useState(false);
   const [data, setData] = useState(() => defaultData());
   const [newCat, setNewCat] = useState({ name: "", amount: "" });
+  const [showAddIncomeModal, setShowAddIncomeModal] = useState(false);
+  const [newIncome, setNewIncome] = useState({ name: "", amount: "" });
   const [editingId, setEditingId] = useState(null);
   const [editVal, setEditVal] = useState({});
   const [editingIncome, setEditingIncome] = useState(false);
@@ -143,21 +150,74 @@ export default function BudgetApp() {
   const authCycleRef = useRef({ userId: null, counted: false });
   const uncategorizedSuccessTimeoutRef = useRef(null);
 
+  const saveData = useCallback(
+    async (newData) => {
+      setData(newData);
+      if (session) {
+        await storage.set(`budget-${month}-${year}`, JSON.stringify(newData));
+      }
+    },
+    [session, storage, month, year],
+  );
+
+  const addIncomeCategory = useCallback(
+    async (name, amount) => {
+      const newIncomeCategories = [
+        ...data.incomeCategories,
+        { id: Date.now(), name, amount: Number(amount) },
+      ];
+      await saveData({ ...data, incomeCategories: newIncomeCategories });
+    },
+    [data, saveData],
+  );
+
+  const deleteIncomeCategory = useCallback(
+    async (id) => {
+      const newIncomeCategories = data.incomeCategories.filter((ic) => ic.id !== id);
+      await saveData({ ...data, incomeCategories: newIncomeCategories });
+    },
+    [data, saveData],
+  );
+
+  const updateIncomeCategory = useCallback(
+    async (id, name, amount) => {
+      const newIncomeCategories = data.incomeCategories.map((ic) =>
+        ic.id === id ? { ...ic, name, amount: Number(amount) } : ic,
+      );
+      await saveData({ ...data, incomeCategories: newIncomeCategories });
+    },
+    [data, saveData],
+  );
+
+  const scrollToIncome = useCallback(() => {
+    setActiveTab("budget");
+    setTimeout(() => {
+      incomeSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  }, []);
+
   const {
     expectedSurplus,
     expectedSurplusPositive,
     income,
+    incomeCategories,
     projectedMonthEndSpent,
-    totalPlanned,
-    transactions,
-    spentByCategory,
-    totalSpent,
-    leftover,
     spendPct,
+    spentByCategory,
+    earnedByCategory,
+    totalPlanned,
+    totalSpent,
+    transactions,
+    leftover,
     leftoverPositive,
     barColor,
     pastNames,
   } = buildBudgetSummary(data, month, year);
+
+  const incomeSectionRef = useRef(null);
   const uncategorizedTransactions = transactions.filter(
     (transaction) => transaction.categoryId === null || transaction.categoryId === undefined,
   );
@@ -806,11 +866,19 @@ export default function BudgetApp() {
     if (!newTx.name.trim() || !newTx.amount) return;
     if (!isSplit && !newTx.categoryId) return;
 
+    const catId = isSplit ? null : parseInt(newTx.categoryId, 10);
+    let amount = parseFloat(newTx.amount) || 0;
+
+    // If it's an income category and amount is positive, negate it
+    if (catId && data.incomeCategories.some(ic => ic.id === catId) && amount > 0) {
+      amount = amount * -1;
+    }
+
     const transaction = {
       id: Date.now(),
       name: newTx.name.trim(),
-      amount: newTx.amount,
-      categoryId: isSplit ? null : parseInt(newTx.categoryId, 10),
+      amount: amount.toFixed(2),
+      categoryId: catId,
       isSplit,
       splits: isSplit ? splitData.splits : null,
       date: todayLabel(),
@@ -877,12 +945,23 @@ export default function BudgetApp() {
       ...data,
       transactions: transactions.map((transaction) =>
         transaction.id === transactionId
-          ? {
-              ...transaction,
-              categoryId: isSplit ? null : (categoryId ? parseInt(categoryId, 10) : null),
-              isSplit,
-              splits: isSplit ? splitData.splits : null,
-            }
+          ? (() => {
+              const catId = isSplit ? null : (categoryId ? parseInt(categoryId, 10) : null);
+              let amount = parseFloat(transaction.amount) || 0;
+              
+              // If we just assigned an income category and the amount is positive (e.g. from a manual entry we just made or an imported spender), negate it
+              if (catId && data.incomeCategories.some(ic => ic.id === catId) && amount > 0) {
+                amount = amount * -1;
+              }
+
+              return {
+                ...transaction,
+                amount: amount.toFixed(2),
+                categoryId: catId,
+                isSplit,
+                splits: isSplit ? splitData.splits : null,
+              };
+            })()
           : transaction,
       ),
     });
@@ -1353,6 +1432,22 @@ export default function BudgetApp() {
         />
       )}
 
+      {showAddIncomeModal && (
+        <AddIncomeModal
+          newIncome={newIncome}
+          onIncomeChange={setNewIncome}
+          onConfirm={() => {
+            addIncomeCategory(newIncome.name, newIncome.amount);
+            setShowAddIncomeModal(false);
+            setNewIncome({ name: "", amount: "" });
+          }}
+          onCancel={() => {
+            setShowAddIncomeModal(false);
+            setNewIncome({ name: "", amount: "" });
+          }}
+        />
+      )}
+
       <Header
         month={month}
         year={year}
@@ -1477,18 +1572,10 @@ export default function BudgetApp() {
         })()}
 
         <SummaryCards
-          editingIncome={editingIncome}
+          onScrollToIncome={scrollToIncome}
           expectedSurplus={expectedSurplus}
           expectedSurplusPositive={expectedSurplusPositive}
           income={income}
-          incomeInput={incomeInput}
-          incomeRef={incomeRef}
-          leftover={leftover}
-          leftoverPositive={leftoverPositive}
-          onStartIncomeEdit={startIncomeEdit}
-          onIncomeInputChange={setIncomeInput}
-          onSaveIncome={saveIncome}
-          onCancelIncomeEdit={cancelIncomeEdit}
           projectedMonthEndSpent={projectedMonthEndSpent}
           totalPlanned={totalPlanned}
           totalSpent={totalSpent}
@@ -1513,18 +1600,29 @@ export default function BudgetApp() {
             activeTab={activeTab} 
             onTabChange={(key) => {
               setActiveTab(key);
-              setTimeout(() => {
-                tabSwitcherRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                });
-              }, 50);
+              if (key === "budget") {
+                scrollToIncome();
+              } else {
+                setTimeout(() => {
+                  tabSwitcherRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 50);
+              }
             }} 
           />
         </div>
 
         {activeTab === "budget" && (
           <BudgetTab
+            incomeSectionRef={incomeSectionRef}
+            incomeCategories={incomeCategories}
+            earnedByCategory={earnedByCategory}
+            onAddIncomeCategory={addIncomeCategory}
+            onDeleteIncomeCategory={deleteIncomeCategory}
+            onUpdateIncomeCategory={updateIncomeCategory}
+            onOpenAddIncome={() => setShowAddIncomeModal(true)}
             categories={data.categories}
             spentByCategory={spentByCategory}
             editingId={editingId}
@@ -1571,6 +1669,7 @@ export default function BudgetApp() {
         {activeTab === "transactions" && (
           <TransactionsTab
             categories={data.categories}
+            incomeCategories={incomeCategories}
             transactions={transactions}
             uncategorizedTransactions={uncategorizedTransactions}
             showUncategorizedSection={showUncategorizedSection}
@@ -1579,7 +1678,10 @@ export default function BudgetApp() {
             selectedTransactionIds={selectedTransactionIds}
             spentByCategory={spentByCategory}
             formatCurrency={formatCurrency}
-            getCategoryById={(id) => getCategoryById(data.categories, id)}
+            getCategoryById={(id) =>
+              data.categories.find((c) => c.id === parseInt(id, 10)) ||
+              incomeCategories.find((ic) => ic.id === parseInt(id, 10))
+            }
             importError={importError}
             isImportDragActive={isImportDragActive}
             mostRecentImportedTransactionLabel={mostRecentImportedTransactionLabel}

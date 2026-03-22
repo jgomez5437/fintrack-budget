@@ -5,6 +5,12 @@ import CategoryEditModal from "./CategoryEditModal";
 import { inputStyle } from "../styles";
 
 export default function BudgetTab({
+  incomeSectionRef,
+  incomeCategories = [],
+  earnedByCategory = {},
+  onAddIncomeCategory,
+  onDeleteIncomeCategory,
+  onUpdateIncomeCategory,
   categories,
   spentByCategory,
   editingId,
@@ -26,9 +32,11 @@ export default function BudgetTab({
   onInlineAmountChange,
   onSubmitInline,
   onOpenAddCategory,
+  onOpenAddIncome,
   onReorderCategories,
 }) {
-  const activeEditCategory = categories.find((category) => category.id === editingId);
+  const activeEditCategory = categories.find((category) => category.id === editingId) || 
+                             incomeCategories.find((ic) => ic.id === editingId);
 
   // ── Drag State ──
   const [dragIndex, setDragIndex] = useState(null);
@@ -180,7 +188,6 @@ export default function BudgetTab({
     };
   }, [dragIndex, categories, computeDropIndex, startAutoScroll, stopAutoScroll, onReorderCategories]);
 
-
   return (
     <div className="fade-up">
       {activeEditCategory && (
@@ -189,8 +196,119 @@ export default function BudgetTab({
           onEditValueChange={onEditValueChange}
           onSave={() => onSaveEdit(activeEditCategory.id)}
           onCancel={onCancelEdit}
+          isIncome={incomeCategories.some((ic) => ic.id === editingId)}
         />
       )}
+
+      {/* ── INCOME SECTION ── */}
+      <div ref={incomeSectionRef} style={{ scrollMarginTop: "24px", marginBottom: "32px" }}>
+        <div
+          style={{
+            fontSize: "12px",
+            color: C.green,
+            letterSpacing: "2px",
+            marginBottom: "14px",
+            fontWeight: 700,
+          }}
+        >
+          INCOME STREAMS
+        </div>
+
+        <div style={{ marginBottom: "16px" }}>
+          <button
+            onClick={onOpenAddIncome}
+            style={{
+              width: "100%",
+              background: C.surface,
+              border: `1.5px dashed ${C.green}`,
+              color: C.green,
+              padding: "15px",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: 600,
+              transition: "all 0.15s",
+            }}
+          >
+            + Add Income Source
+          </button>
+        </div>
+
+        {incomeCategories.length > 0 && (
+          <div
+            style={{
+              borderRadius: "12px",
+              overflow: "hidden",
+              border: `1.5px solid ${C.border}`,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+            }}
+          >
+            {incomeCategories.map((ic, index) => {
+              const estimated = parseFloat(ic.amount) || 0;
+              const actual = earnedByCategory[ic.id] || 0;
+              const pct = estimated > 0 ? Math.min((actual / estimated) * 100, 100) : 0;
+              const barColor = actual >= estimated ? C.green : C.blue;
+
+              return (
+                <div
+                  key={ic.id}
+                  onClick={() => onStartEdit(ic)}
+                  style={{
+                    padding: "14px 18px",
+                    background: index % 2 === 0 ? C.surface : C.surfaceAlt,
+                    borderBottom: index < incomeCategories.length - 1 ? `1px solid ${C.border}` : "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                  }}
+                >
+                  <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
+                    <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
+                      <circle cx="22" cy="22" r="18" fill="none" stroke={C.border} strokeWidth="4" />
+                      <circle
+                        cx="22" cy="22" r="18" fill="none" stroke={barColor} strokeWidth="4"
+                        strokeLinecap="round" strokeDasharray={113.1}
+                        strokeDashoffset={113.1 - (pct / 100) * 113.1}
+                        style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                      />
+                    </svg>
+                    <div style={{
+                      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontWeight: 700, color: barColor,
+                    }}>
+                      {Math.round(pct)}%
+                    </div>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ic.name}
+                      </div>
+                      <div style={{ fontSize: "15px", fontWeight: 700, color: C.text }}>
+                        ${formatCurrency(estimated)}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "12px", color: C.textLight }}>
+                        actual <span style={{ color: C.green, fontWeight: 700 }}>${formatCurrency(actual)}</span>
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteIncomeCategory(ic.id); }}
+                        style={{ background: "transparent", border: "none", color: C.textLight, cursor: "pointer", padding: "4px" }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <div
         style={{

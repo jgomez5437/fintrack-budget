@@ -104,14 +104,14 @@ export function parseImportFile(file) {
           if (rawDesc === "" && rawAmount === "") continue;
 
           const amount = parseFloat(String(rawAmount).replace(/[^0-9.\-]/g, ""));
-          if (Number.isNaN(amount) || amount >= 0) continue;
+          if (Number.isNaN(amount) || amount === 0) continue;
           const parsedDate = parseTransactionDate(rawDate);
 
           parsedRows.push({
             id: Date.now() + Math.random(),
             name: cleanMerchant(String(rawDesc)),
             rawDesc: String(rawDesc),
-            amount: Math.abs(amount).toFixed(2),
+            amount: (amount * -1).toFixed(2), // Invert so spending is positive, income is negative
             categoryId: "",
             date: parsedDate.label,
             importDateValue: parsedDate.sortValue,
