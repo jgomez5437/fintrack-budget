@@ -1664,6 +1664,9 @@ export default function BudgetApp() {
             onReorderCategories={(reordered) => {
               setData((prev) => ({ ...prev, categories: reordered }));
             }}
+            onReorderIncomeCategories={(reordered) => {
+              setData((prev) => ({ ...prev, incomeCategories: reordered }));
+            }}
           />
         )}
         {activeTab === "transactions" && (

@@ -34,6 +34,7 @@ export default function BudgetTab({
   onOpenAddCategory,
   onOpenAddIncome,
   onReorderCategories,
+  onReorderIncomeCategories,
 }) {
   const activeEditCategory = categories.find((category) => category.id === editingId) || 
                              incomeCategories.find((ic) => ic.id === editingId);
@@ -58,9 +59,12 @@ export default function BudgetTab({
 
   const listRef = useRef(null);
 
-  const getRowEls = useCallback(() =>
-    listRef.current ? Array.from(listRef.current.querySelectorAll(".cat-drag-row")) : [],
-  []);
+  const getRowEls = useCallback(() => {
+    if (!listRef.current) return [];
+    const type = dragStateRef.current.type || "budget";
+    const selector = type === "budget" ? ".cat-drag-row" : ".income-drag-row";
+    return Array.from(listRef.current.querySelectorAll(selector));
+  }, []);
 
   const computeDropIndex = useCallback((clientY) => {
     const rows = getRowEls();
@@ -103,7 +107,7 @@ export default function BudgetTab({
     dragStateRef.current.scrollRAF = requestAnimationFrame(tick);
   }, [stopAutoScroll]);
 
-  const handlePointerDown = useCallback((event, index) => {
+  const handlePointerDown = useCallback((event, index, type = "budget") => {
     event.stopPropagation();
     event.preventDefault();
 
@@ -117,6 +121,7 @@ export default function BudgetTab({
     const rect = row.getBoundingClientRect();
     const state = dragStateRef.current;
     state.active = true;
+    state.type = type;
     state.fromIndex = index;
     state.startY = event.clientY;
     state.startX = event.clientX;
@@ -158,22 +163,31 @@ export default function BudgetTab({
       startAutoScroll(clientY);
     };
 
-    const onUp = () => {
+    const onUp = (event) => {
       const state = dragStateRef.current;
       if (!state.active) return;
       state.active = false;
       stopAutoScroll();
 
-      setGhostStyle(null);
-      setDropIndex((di) => {
-        if (di !== null && di !== state.fromIndex) {
+      const finalY = (event && event.clientY !== undefined) ? event.clientY : (state.currentY + state.offsetY - window.scrollY);
+      const di = computeDropIndex(finalY);
+
+      if (di !== null && di !== state.fromIndex) {
+        if (state.type === "budget") {
           const reordered = [...categories];
           const [removed] = reordered.splice(state.fromIndex, 1);
           reordered.splice(di, 0, removed);
           onReorderCategories(reordered);
+        } else if (onReorderIncomeCategories) {
+          const reordered = [...incomeCategories];
+          const [removed] = reordered.splice(state.fromIndex, 1);
+          reordered.splice(di, 0, removed);
+          onReorderIncomeCategories(reordered);
         }
-        return null;
-      });
+      }
+
+      setGhostStyle(null);
+      setDropIndex(null);
       setDragIndex(null);
     };
 
@@ -249,18 +263,25 @@ export default function BudgetTab({
               const pct = estimated > 0 ? Math.min((actual / estimated) * 100, 100) : 0;
               const barColor = actual >= estimated ? C.green : C.blue;
 
+              const isDragging = dragIndex === index && dragStateRef.current.type === "income";
+              const isDropTarget = dropIndex === index && dragStateRef.current.type === "income" && dragIndex !== index;
+
               return (
                 <div
                   key={ic.id}
+                  className={`income-drag-row ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
                   onClick={() => onStartEdit(ic)}
+                  onPointerDown={(e) => handlePointerDown(e, index, "income")}
                   style={{
                     padding: "14px 18px",
                     background: index % 2 === 0 ? C.surface : C.surfaceAlt,
                     borderBottom: index < incomeCategories.length - 1 ? `1px solid ${C.border}` : "none",
-                    cursor: "pointer",
+                    cursor: "grab",
                     display: "flex",
                     alignItems: "center",
                     gap: "16px",
+                    opacity: isDragging ? 0 : 1,
+                    position: "relative",
                   }}
                 >
                   <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
