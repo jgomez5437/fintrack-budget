@@ -56,6 +56,10 @@ export default function TransactionsTab({
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const isSelectionMode = isMobileSelectionMode || selectedCount > 0;
+  const [isManualSplit, setIsManualSplit] = useState(false);
+  const [manualSplit1, setManualSplit1] = useState({ categoryId: "", amount: "" });
+  const [manualSplit2, setManualSplit2] = useState({ categoryId: "", amount: "" });
+
   const filteredTransactions = filterCategoryId
     ? transactions.filter((t) => (filterCategoryId === "__uncategorized__" ? !t.categoryId : String(t.categoryId) === filterCategoryId))
     : transactions;
@@ -137,9 +141,13 @@ export default function TransactionsTab({
     setActiveCategoryId("");
   };
 
-  const saveTransactionCategory = () => {
+  const saveTransactionCategory = (splitData) => {
     if (!activeTransaction) return;
-    onUpdateTransactionCategory(activeTransaction.id, activeCategoryId);
+    if (splitData && splitData.isSplit) {
+      onUpdateTransactionCategory(activeTransaction.id, null, splitData);
+    } else {
+      onUpdateTransactionCategory(activeTransaction.id, activeCategoryId, splitData);
+    }
     closeTransactionDetails();
   };
 
@@ -217,6 +225,33 @@ export default function TransactionsTab({
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: transaction.isSplit ? C.blue : (category ? C.blueMid : C.textLight),
+                          marginTop: "4px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        {transaction.isSplit ? (
+                          <>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M7 7l5 5-5 5M13 7l5 5-5 5" />
+                            </svg>
+                            <span>
+                              {transaction.splits?.map((s, i) => {
+                                const cat = getCategoryById(s.categoryId);
+                                return (cat?.name || "Uncategorized") + (i < transaction.splits.length - 1 ? " + " : "");
+                              })}
+                            </span>
+                          </>
+                        ) : (
+                          category?.name || "Uncategorized"
+                        )}
+                      </div>
                       <div
                         style={{
                           fontSize: "15px",
@@ -433,31 +468,138 @@ export default function TransactionsTab({
               />
             </div>
 
-            <select
-              value={newTx.categoryId}
-              onChange={(event) =>
-                onNewTransactionChange({ ...newTx, categoryId: event.target.value })
-              }
-              style={selectStyle}
-            >
-              <option value="" disabled>
-                Select a category
-              </option>
-              {categories.map((category) => {
-                const spent = spentByCategory[category.id] || 0;
-                const budget = parseFloat(category.amount) || 0;
-                return (
-                  <option key={category.id} value={category.id}>
-                    {category.name} (${formatCurrency(budget - spent)} left)
-                  </option>
-                );
-              })}
-            </select>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: "12px", color: C.textLight, fontWeight: 700 }}>CATEGORY</div>
+              <button
+                onClick={() => setIsManualSplit(!isManualSplit)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: C.blue,
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                {isManualSplit ? "Cancel Split" : "Split Transaction"}
+              </button>
+            </div>
+
+            {!isManualSplit ? (
+              <select
+                value={newTx.categoryId}
+                onChange={(event) =>
+                  onNewTransactionChange({ ...newTx, categoryId: event.target.value })
+                }
+                style={selectStyle}
+              >
+                <option value="" disabled>
+                  Select a category
+                </option>
+                {categories.map((category) => {
+                  const spent = spentByCategory[category.id] || 0;
+                  const budget = parseFloat(category.amount) || 0;
+                  return (
+                    <option key={category.id} value={category.id}>
+                      {category.name} (${formatCurrency(budget - spent)} left)
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <div style={{ display: "grid", gap: "10px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "8px" }}>
+                  <select
+                    value={manualSplit1.categoryId}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      setManualSplit1(prev => {
+                        const next = { ...prev, categoryId: cid };
+                        if (!next.amount) {
+                          const total = parseFloat(newTx.amount) || 0;
+                          const half = (total / 2).toFixed(2);
+                          next.amount = half;
+                          setManualSplit2(s2 => ({ ...s2, amount: (total - parseFloat(half)).toFixed(2) }));
+                        }
+                        return next;
+                      });
+                    }}
+                    style={selectStyle}
+                  >
+                    <option value="">Category 1</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Amt"
+                    value={manualSplit1.amount}
+                    onChange={(e) => {
+                      const total = parseFloat(newTx.amount) || 0;
+                      const val = e.target.value;
+                      const amt1 = parseFloat(val) || 0;
+                      setManualSplit1(prev => ({ ...prev, amount: val }));
+                      setManualSplit2(prev => ({ ...prev, amount: (total - amt1).toFixed(2) }));
+                    }}
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "8px" }}>
+                  <select
+                    value={manualSplit2.categoryId}
+                    onChange={(e) => setManualSplit2(prev => ({ ...prev, categoryId: e.target.value }))}
+                    style={selectStyle}
+                  >
+                    <option value="">Category 2</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Amt"
+                    value={manualSplit2.amount}
+                    onChange={(e) => {
+                      const total = parseFloat(newTx.amount) || 0;
+                      const val = e.target.value;
+                      const amt2 = parseFloat(val) || 0;
+                      setManualSplit2(prev => ({ ...prev, amount: val }));
+                      setManualSplit1(prev => ({ ...prev, amount: (total - amt2).toFixed(2) }));
+                    }}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: "10px" }}>
               <button
                 className="primary-btn"
-                onClick={onAddTransaction}
+                onClick={() => {
+                  if (isManualSplit) {
+                    if (!manualSplit1.categoryId || !manualSplit2.categoryId) {
+                      alert("Please select both categories for the split.");
+                      return;
+                    }
+                    const s1a = parseFloat(manualSplit1.amount) || 0;
+                    const s2a = parseFloat(manualSplit2.amount) || 0;
+                    const total = parseFloat(newTx.amount) || 0;
+                    if (Math.abs(s1a + s2a - total) > 0.01) {
+                      alert("Split amounts must equal the total.");
+                      return;
+                    }
+                    onAddTransaction({
+                      isSplit: true,
+                      splits: [
+                        { categoryId: parseInt(manualSplit1.categoryId, 10), amount: s1a },
+                        { categoryId: parseInt(manualSplit2.categoryId, 10), amount: s2a }
+                      ]
+                    });
+                    setIsManualSplit(false);
+                    setManualSplit1({ categoryId: "", amount: "" });
+                    setManualSplit2({ categoryId: "", amount: "" });
+                  } else {
+                    onAddTransaction();
+                  }
+                }}
                 style={{
                   flex: 1,
                   background: C.blue,
@@ -1010,37 +1152,79 @@ export default function TransactionsTab({
                         flexWrap: "wrap",
                       }}
                     >
-                      {category ? (
-                        <button
-                          onClick={() => handleTransactionClick(transaction)}
-                          style={{
-                            fontSize: "11px",
-                            color: C.blue,
-                            background: C.blueLight,
-                            padding: "2px 8px",
+                      {transaction.isSplit ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                          <span style={{ 
+                            fontSize: "10px", 
+                            color: C.blue, 
+                            fontWeight: 800, 
+                            background: C.blueLight, 
+                            padding: "1px 5px", 
                             borderRadius: "4px",
-                            fontWeight: 600,
-                            border: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {category.name}
-                        </button>
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "3px" 
+                          }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M7 7l5 5-5 5M13 7l5 5-5 5" />
+                            </svg>
+                            SPLIT
+                          </span>
+                          {transaction.splits?.map((s, i) => {
+                            const cat = getCategoryById(s.categoryId);
+                            return (
+                              <button
+                                key={i}
+                                onClick={() => handleTransactionClick(transaction)}
+                                style={{
+                                  fontSize: "10px",
+                                  color: C.textMid,
+                                  background: C.surfaceAlt,
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  fontWeight: 600,
+                                  border: `1px solid ${C.border}`,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {cat?.name || "Uncategorized"}
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <button
-                          onClick={() => handleTransactionClick(transaction)}
-                          style={{
-                            fontSize: "11px",
-                            color: C.textLight,
-                            background: C.surfaceAlt,
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Uncategorized
-                        </button>
+                        category ? (
+                          <button
+                            onClick={() => handleTransactionClick(transaction)}
+                            style={{
+                              fontSize: "11px",
+                              color: C.blue,
+                              background: C.blueLight,
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              fontWeight: 600,
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {category.name}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleTransactionClick(transaction)}
+                            style={{
+                              fontSize: "11px",
+                              color: C.textLight,
+                              background: C.surfaceAlt,
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Uncategorized
+                          </button>
+                        )
                       )}
                       <button
                         onClick={() => handleTransactionClick(transaction)}

@@ -801,19 +801,28 @@ export default function BudgetApp() {
     setAutocomplete([]);
   };
 
-  const addTransaction = () => {
-    if (!newTx.name.trim() || !newTx.amount || !newTx.categoryId) return;
+  const addTransaction = (splitData = null) => {
+    const isSplit = !!(splitData && splitData.isSplit);
+    if (!newTx.name.trim() || !newTx.amount) return;
+    if (!isSplit && !newTx.categoryId) return;
 
     const transaction = {
       id: Date.now(),
       name: newTx.name.trim(),
       amount: newTx.amount,
-      categoryId: parseInt(newTx.categoryId, 10),
+      categoryId: isSplit ? null : parseInt(newTx.categoryId, 10),
+      isSplit,
+      splits: isSplit ? splitData.splits : null,
       date: todayLabel(),
     };
 
     update({ ...data, transactions: [transaction, ...transactions] });
-    rememberCategory(newTx.categoryId);
+    
+    if (isSplit) {
+      splitData.splits.forEach(s => rememberCategory(String(s.categoryId)));
+    } else {
+      rememberCategory(newTx.categoryId);
+    }
     closeTxForm();
   };
 
@@ -862,20 +871,25 @@ export default function BudgetApp() {
     });
   };
 
-  const updateTransactionCategory = (transactionId, categoryId) => {
+  const updateTransactionCategory = (transactionId, categoryId, splitData = null) => {
+    const isSplit = !!(splitData && splitData.isSplit);
     update({
       ...data,
       transactions: transactions.map((transaction) =>
         transaction.id === transactionId
           ? {
               ...transaction,
-              categoryId: categoryId ? parseInt(categoryId, 10) : null,
+              categoryId: isSplit ? null : (categoryId ? parseInt(categoryId, 10) : null),
+              isSplit,
+              splits: isSplit ? splitData.splits : null,
             }
           : transaction,
       ),
     });
 
-    if (categoryId) {
+    if (isSplit) {
+      splitData.splits.forEach(s => rememberCategory(String(s.categoryId)));
+    } else if (categoryId) {
       rememberCategory(categoryId);
     }
   };

@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { C } from "../constants";
 
 export default function TransactionDetailsModal({
@@ -9,6 +10,66 @@ export default function TransactionDetailsModal({
   onSave,
   onClose,
 }) {
+  const [isSplit, setIsSplit] = useState(transaction.isSplit || false);
+  const [split1, setSplit1] = useState(
+    transaction.isSplit && transaction.splits
+      ? { categoryId: String(transaction.splits[0].categoryId), amount: String(transaction.splits[0].amount) }
+      : { categoryId: categoryId || "", amount: "" }
+  );
+  const [split2, setSplit2] = useState(
+    transaction.isSplit && transaction.splits
+      ? { categoryId: String(transaction.splits[1].categoryId), amount: String(transaction.splits[1].amount) }
+      : { categoryId: "", amount: "" }
+  );
+
+  const totalAmount = parseFloat(transaction.amount);
+
+  useEffect(() => {
+    if (isSplit && !split1.amount && !split2.amount) {
+      const half = (totalAmount / 2).toFixed(2);
+      setSplit1({ categoryId: categoryId || "", amount: half });
+      setSplit2({ categoryId: "", amount: (totalAmount - parseFloat(half)).toFixed(2) });
+    }
+  }, [isSplit, totalAmount, categoryId, split1.amount, split2.amount]);
+
+  const handleSplit1AmountChange = (val) => {
+    const amount1 = parseFloat(val) || 0;
+    setSplit1((prev) => ({ ...prev, amount: val }));
+    setSplit2((prev) => ({ ...prev, amount: (totalAmount - amount1).toFixed(2) }));
+  };
+
+  const handleSplit2AmountChange = (val) => {
+    const amount2 = parseFloat(val) || 0;
+    setSplit2((prev) => ({ ...prev, amount: val }));
+    setSplit1((prev) => ({ ...prev, amount: (totalAmount - amount2).toFixed(2) }));
+  };
+
+  const handleSave = () => {
+    if (isSplit) {
+      if (!split1.categoryId || !split2.categoryId) {
+        alert("Please select both categories for the split.");
+        return;
+      }
+      const s1Amt = parseFloat(split1.amount) || 0;
+      const s2Amt = parseFloat(split2.amount) || 0;
+      
+      if (Math.abs(s1Amt + s2Amt - totalAmount) > 0.01) {
+        alert(`The split amounts ($${(s1Amt + s2Amt).toFixed(2)}) must equal the total ($${totalAmount.toFixed(2)}).`);
+        return;
+      }
+
+      onSave({
+        isSplit: true,
+        splits: [
+          { categoryId: parseInt(split1.categoryId, 10), amount: s1Amt },
+          { categoryId: parseInt(split2.categoryId, 10), amount: s2Amt },
+        ],
+      });
+    } else {
+      onSave({ isSplit: false, splits: null });
+    }
+  };
+
   const modal = (
     <div
       onClick={onClose}
@@ -57,56 +118,169 @@ export default function TransactionDetailsModal({
         </h2>
 
         <div style={{ display: "grid", gap: "14px", marginTop: "18px" }}>
-          <div>
-            <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
-              Date
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                Date
+              </div>
+              <div style={{ marginTop: "4px", color: C.text, fontSize: "15px", fontWeight: 600 }}>
+                {transaction.date}
+              </div>
             </div>
-            <div style={{ marginTop: "6px", color: C.text, fontSize: "15px", fontWeight: 600 }}>
-              {transaction.date}
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                Amount
+              </div>
+              <div style={{ marginTop: "4px", color: C.red, fontSize: "18px", fontWeight: 700 }}>
+                -${transaction.amount}
+              </div>
             </div>
           </div>
 
-          <div>
-            <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
-              Amount
-            </div>
-            <div style={{ marginTop: "6px", color: C.red, fontSize: "18px", fontWeight: 700 }}>
-              -${transaction.amount}
-            </div>
-          </div>
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: "14px" }}>
+            {!isSplit ? (
+              <>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                  Category
+                </div>
+                <select
+                  value={categoryId}
+                  onChange={(event) => onCategoryChange(event.target.value)}
+                  style={{
+                    width: "100%",
+                    marginTop: "8px",
+                    background: C.surface,
+                    border: `1.5px solid ${C.border}`,
+                    color: C.text,
+                    padding: "12px 14px",
+                    borderRadius: "10px",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setIsSplit(true)}
+                  style={{
+                    marginTop: "12px",
+                    background: "transparent",
+                    border: "none",
+                    color: C.blue,
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: 0,
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M7 7l5 5-5 5M13 7l5 5-5 5" />
+                  </svg>
+                  Split Transaction
+                </button>
+              </>
+            ) : (
+              <div style={{ display: "grid", gap: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: C.blue, letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                    Split Breakdown
+                  </div>
+                  <button
+                    onClick={() => setIsSplit(false)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: C.textLight,
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel Split
+                  </button>
+                </div>
 
-          <div>
-            <div style={{ fontSize: "12px", fontWeight: 700, color: C.textLight, letterSpacing: "1.2px", textTransform: "uppercase" }}>
-              Category
-            </div>
-            <select
-              value={categoryId}
-              onChange={(event) => onCategoryChange(event.target.value)}
-              style={{
-                width: "100%",
-                marginTop: "8px",
-                background: C.surface,
-                border: `1.5px solid ${C.border}`,
-                color: C.text,
-                padding: "12px 14px",
-                borderRadius: "10px",
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
-            >
-              <option value="">Uncategorized</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "10px" }}>
+                  <select
+                    value={split1.categoryId}
+                    onChange={(e) => setSplit1({ ...split1, categoryId: e.target.value })}
+                    style={{
+                      background: C.surface,
+                      border: `1.5px solid ${C.border}`,
+                      color: C.text,
+                      padding: "10px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <option value="">Category 1</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={split1.amount}
+                    onChange={(e) => handleSplit1AmountChange(e.target.value)}
+                    style={{
+                      background: C.surface,
+                      border: `1.5px solid ${C.border}`,
+                      color: C.red,
+                      padding: "10px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: "10px" }}>
+                  <select
+                    value={split2.categoryId}
+                    onChange={(e) => setSplit2({ ...split2, categoryId: e.target.value })}
+                    style={{
+                      background: C.surface,
+                      border: `1.5px solid ${C.border}`,
+                      color: C.text,
+                      padding: "10px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <option value="">Category 2</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={split2.amount}
+                    onChange={(e) => handleSplit2AmountChange(e.target.value)}
+                    style={{
+                      background: C.surface,
+                      border: `1.5px solid ${C.border}`,
+                      color: C.red,
+                      padding: "10px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
+        <div style={{ display: "grid", gap: "12px", marginTop: "24px" }}>
           <button
-            onClick={onSave}
+            onClick={handleSave}
             style={{
               border: "none",
               borderRadius: "16px",
@@ -118,7 +292,7 @@ export default function TransactionDetailsModal({
               cursor: "pointer",
             }}
           >
-            Save Category
+            {isSplit ? "Save Split Categories" : "Save Category"}
           </button>
 
           <button

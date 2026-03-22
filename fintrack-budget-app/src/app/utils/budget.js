@@ -16,9 +16,17 @@ export function buildBudgetSummary(data, month = new Date().getMonth(), year = n
   );
 
   const spentByCategory = transactions.reduce((accumulator, transaction) => {
-    accumulator[transaction.categoryId] =
-      (accumulator[transaction.categoryId] || 0) +
-      (parseFloat(transaction.amount) || 0);
+    if (transaction.isSplit && Array.isArray(transaction.splits)) {
+      transaction.splits.forEach((split) => {
+        const catId = split.categoryId;
+        const amt = parseFloat(split.amount) || 0;
+        accumulator[catId] = (accumulator[catId] || 0) + amt;
+      });
+    } else {
+      accumulator[transaction.categoryId] =
+        (accumulator[transaction.categoryId] || 0) +
+        (parseFloat(transaction.amount) || 0);
+    }
     return accumulator;
   }, {});
 
