@@ -38,6 +38,12 @@ import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
 import SkeletonDashboard from "./app/components/SkeletonDashboard";
 import NamePromptModal from "./app/components/NamePromptModal";
 import SettingsModal from "./app/components/SettingsModal";
+import WeeklySummaryModal from "./app/components/WeeklySummaryModal";
+import {
+  generateAndSaveSummary,
+  getTodaysSummary,
+  isSunday,
+} from "./app/services/weeklySummary";
 
 function getNextMonthTarget(month, year) {
   if (month === 11) {
@@ -122,6 +128,9 @@ export default function BudgetApp() {
   const [showUncategorizedSection, setShowUncategorizedSection] = useState(false);
   const [uncategorizedAssignments, setUncategorizedAssignments] = useState({});
   const [uncategorizedSaveSuccess, setUncategorizedSaveSuccess] = useState(false);
+  const [weeklySummary, setWeeklySummary] = useState(null);       // today's row or null
+  const [showWeeklySummary, setShowWeeklySummary] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   const incomeRef = useRef(null);
   const savingsRef = useRef(null);
@@ -257,6 +266,34 @@ export default function BudgetApp() {
     loadFirstName();
     return () => { isMounted = false; };
   }, [authLoading, session, storage]);
+
+  // ── Weekly AI Summary — generate once on Sunday login ──────────────────────
+  useEffect(() => {
+    if (authLoading || !session || !budgetLoaded) return;
+    if (!isSunday()) return;
+
+    const userId = session.user.id;
+    let isMounted = true;
+
+    async function checkAndGenerate() {
+      const existing = await getTodaysSummary(userId);
+      if (!isMounted) return;
+      if (existing) { setWeeklySummary(existing); return; }
+
+      setIsGeneratingSummary(true);
+      const result = await generateAndSaveSummary({
+        userId,
+        transactions: data.transactions || [],
+        categories: data.categories || [],
+      });
+      if (!isMounted) return;
+      setIsGeneratingSummary(false);
+      if (result) setWeeklySummary(result);
+    }
+
+    checkAndGenerate();
+    return () => { isMounted = false; };
+  }, [authLoading, session, budgetLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (authLoading) return;
@@ -1270,6 +1307,14 @@ export default function BudgetApp() {
         />
       )}
 
+      {showWeeklySummary && (
+        <WeeklySummaryModal
+          userId={session?.user?.id}
+          isGenerating={isGeneratingSummary}
+          onClose={() => setShowWeeklySummary(false)}
+        />
+      )}
+
       <Header
         month={month}
         year={year}
@@ -1350,6 +1395,37 @@ export default function BudgetApp() {
           </div>
         )}
 
+        {/* Weekly summary banner */}
+        {weeklySummary && (
+          <div
+            className="fade-up"
+            onClick={() => setShowWeeklySummary(true)}
+            style={{
+              cursor: "pointer",
+              marginBottom: "16px",
+              padding: "12px 16px",
+              background: `linear-gradient(90deg, ${C.blue} 0%, #6366f1 100%)`,
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              boxShadow: "0 4px 16px rgba(30,80,212,0.2)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none">
+                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+              </svg>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: C.white }}>
+                Your weekly summary is ready →
+              </span>
+            </div>
+            <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
+              Tap to read
+            </span>
+          </div>
+        )}
+
         <SummaryCards
           editingIncome={editingIncome}
           expectedSurplus={expectedSurplus}
@@ -1378,6 +1454,8 @@ export default function BudgetApp() {
           onSavingsInputChange={setSavingsInput}
           onSaveSavings={saveSavings}
           onCancelSavingsEdit={cancelSavingsEdit}
+          onOpenWeeklySummary={() => setShowWeeklySummary(true)}
+          hasWeeklySummary={Boolean(weeklySummary)}
         />
 
         <div ref={tabSwitcherRef} style={{ scrollMarginTop: "24px" }}>

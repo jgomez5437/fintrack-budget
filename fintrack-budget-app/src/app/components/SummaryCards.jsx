@@ -7,8 +7,6 @@ export default function SummaryCards({
   income,
   incomeInput,
   incomeRef,
-  leftover,
-  leftoverPositive,
   onStartIncomeEdit,
   onIncomeInputChange,
   onSaveIncome,
@@ -28,6 +26,8 @@ export default function SummaryCards({
   onSavingsInputChange,
   onSaveSavings,
   onCancelSavingsEdit,
+  onOpenWeeklySummary,
+  hasWeeklySummary,
 }) {
   const neutralCardStyle = {
     background: C.surface,
@@ -229,55 +229,59 @@ export default function SummaryCards({
       </div>
 
       <div
+        onClick={onOpenWeeklySummary}
         style={{
-          background: leftoverPositive ? C.greenLight : C.redLight,
-          border: `1.5px solid ${leftoverPositive ? "#bbf7d0" : "#fecaca"}`,
+          background: hasWeeklySummary
+            ? `linear-gradient(135deg, ${C.blue} 0%, #6366f1 100%)`
+            : C.surface,
+          border: `1.5px solid ${hasWeeklySummary ? C.blue : C.border}`,
           borderRadius: "14px",
           padding: "20px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+          boxShadow: hasWeeklySummary
+            ? "0 6px 24px rgba(30,80,212,0.22)"
+            : "0 2px 8px rgba(30,80,212,0.06)",
+          cursor: "pointer",
+          transition: "all 0.2s",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            fontSize: "11px",
-            color: leftoverPositive ? C.green : C.red,
-            letterSpacing: "2px",
-            marginBottom: "8px",
-            fontWeight: 600,
-          }}
-        >
-          LEFTOVER
-        </div>
-        <div
-          style={{
-            fontSize: "26px",
-            fontWeight: 700,
-            color: leftoverPositive ? C.green : C.red,
-          }}
-        >
-          {leftover < 0 ? "-" : ""}${formatCurrency(leftover)}
-        </div>
-        <div
-          style={{
-            fontSize: "12px",
-            color: leftoverPositive ? C.green : C.red,
-            marginTop: "4px",
-          }}
-        >
-          Planned - Spent
-        </div>
-        {totalPlanned > 0 && !leftoverPositive && (
-          <div
-            style={{
-              fontSize: "11px",
-              color: C.red,
-              marginTop: "4px",
-              fontWeight: 600,
-            }}
-          >
-            OVER BUDGET
+        {hasWeeklySummary && (
+          <div style={{
+            position: "absolute", top: "10px", right: "10px",
+            background: "rgba(255,255,255,0.2)", borderRadius: "50%",
+            width: "28px", height: "28px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none">
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+            </svg>
           </div>
         )}
+        <div style={{
+          fontSize: "11px",
+          color: hasWeeklySummary ? "rgba(255,255,255,0.75)" : C.textLight,
+          letterSpacing: "2px",
+          marginBottom: "8px",
+          fontWeight: 600,
+        }}>
+          WEEKLY SUMMARY
+        </div>
+        <div style={{
+          fontSize: "16px",
+          fontWeight: 700,
+          color: hasWeeklySummary ? C.white : C.textMid,
+          lineHeight: 1.3,
+        }}>
+          {hasWeeklySummary ? "View AI Analysis →" : "Available Sunday"}
+        </div>
+        <div style={{
+          fontSize: "12px",
+          color: hasWeeklySummary ? "rgba(255,255,255,0.7)" : C.textLight,
+          marginTop: "4px",
+        }}>
+          {hasWeeklySummary ? "Tap to read this week's insights" : "Your summary generates each Sunday"}
+        </div>
       </div>
 
       <div
