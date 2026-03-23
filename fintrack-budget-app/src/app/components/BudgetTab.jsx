@@ -57,13 +57,15 @@ export default function BudgetTab({
     scrollRAF: null,
   });
 
-  const listRef = useRef(null);
+  const budgetListRef = useRef(null);
+  const incomeListRef = useRef(null);
 
-  const getRowEls = useCallback(() => {
-    if (!listRef.current) return [];
-    const type = dragStateRef.current.type || "budget";
+  const getRowEls = useCallback((forcedType) => {
+    const type = forcedType || dragStateRef.current.type || "budget";
+    const container = type === "budget" ? budgetListRef.current : incomeListRef.current;
+    if (!container) return [];
     const selector = type === "budget" ? ".cat-drag-row" : ".income-drag-row";
-    return Array.from(listRef.current.querySelectorAll(selector));
+    return Array.from(container.querySelectorAll(selector));
   }, []);
 
   const computeDropIndex = useCallback((clientY) => {
@@ -111,7 +113,7 @@ export default function BudgetTab({
     event.stopPropagation();
     event.preventDefault();
 
-    const rows = getRowEls();
+    const rows = getRowEls(type);
     const row = rows[index];
     if (!row) return;
 
@@ -200,7 +202,16 @@ export default function BudgetTab({
       window.removeEventListener("pointercancel", onUp);
       stopAutoScroll();
     };
-  }, [dragIndex, categories, computeDropIndex, startAutoScroll, stopAutoScroll, onReorderCategories]);
+  }, [
+    dragIndex,
+    categories,
+    incomeCategories,
+    computeDropIndex,
+    startAutoScroll,
+    stopAutoScroll,
+    onReorderCategories,
+    onReorderIncomeCategories,
+  ]);
 
   return (
     <div className="fade-up">
@@ -250,6 +261,7 @@ export default function BudgetTab({
 
         {incomeCategories.length > 0 && (
           <div
+            ref={incomeListRef}
             style={{
               borderRadius: "12px",
               overflow: "hidden",
@@ -261,49 +273,91 @@ export default function BudgetTab({
               const estimated = parseFloat(ic.amount) || 0;
               const actual = earnedByCategory[ic.id] || 0;
 
-              const isDragging = dragIndex === index && dragStateRef.current.type === "income";
-              const isDropTarget = dropIndex === index && dragStateRef.current.type === "income" && dragIndex !== index;
+              const isIncomeDrag = dragStateRef.current.type === "income";
+              const isDragging = isIncomeDrag && dragIndex === index;
+              const isDropTarget =
+                isIncomeDrag && dropIndex === index && dragIndex !== null && dragIndex !== index;
+
+              // Compute how much this row should shift to "open the gap" for the ghost card
+              let rowShiftY = 0;
+              if (isIncomeDrag && dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
+                const from = dragIndex;
+                const to = dropIndex;
+                const draggedH =
+                  dragStateRef.current.rowHeights[from] ||
+                  dragStateRef.current.ghostHeight ||
+                  80;
+                if (index === from) {
+                  // The dragged row stays put (ghost is carrying it)
+                  rowShiftY = 0;
+                } else if (to > from) {
+                  // Dragging DOWN: rows from (from+1) to (to) shift UP to fill the void
+                  if (index > from && index <= to) rowShiftY = -draggedH;
+                } else {
+                  // Dragging UP: rows from (to) to (from-1) shift DOWN to fill the void
+                  if (index >= to && index < from) rowShiftY = draggedH;
+                }
+              }
 
               return (
                 <div
                   key={ic.id}
                   className={`income-drag-row ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
-                  onClick={() => onStartEdit(ic)}
-                  onPointerDown={(e) => handlePointerDown(e, index, "income")}
+                  onClick={() => {
+                    if (dragIndex === null) onStartEdit(ic);
+                  }}
                   style={{
-                    padding: "14px 18px",
+                    padding: "14px 18px 14px 8px",
                     background: index % 2 === 0 ? C.surface : C.surfaceAlt,
                     borderBottom: index < incomeCategories.length - 1 ? `1px solid ${C.border}` : "none",
-                    cursor: "grab",
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: "16px",
-                    opacity: isDragging ? 0 : 1,
+                    gap: "6px",
+                    opacity: isDragging ? 0.25 : 1,
                     position: "relative",
+                    transform: `translateY(${rowShiftY}px)`,
+                    transition:
+                      dragIndex !== null
+                        ? "transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s"
+                        : "background 0.15s, opacity 0.15s",
+                    zIndex: isDragging ? 0 : 1,
                   }}
                 >
+                  {/* Drag handle (same UX as budget categories) */}
                   <div
                     style={{
-                      width: "44px",
-                      height: "44px",
                       flexShrink: 0,
+                      color: C.green,
+                      cursor: isDragging ? "grabbing" : "grab",
+                      padding: "6px 4px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      touchAction: "none",
+                      opacity: 0.9,
+                      transition: "opacity 0.15s",
                     }}
+                    onPointerDown={(e) => handlePointerDown(e, index, "income")}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Drag to reorder"
                     aria-hidden
                   >
                     <svg
-                      width="32"
-                      height="32"
+                      width="14"
+                      height="14"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke={C.green}
-                      strokeWidth="2.25"
+                      stroke="currentColor"
+                      strokeWidth="2"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
                     >
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      <line x1="8" y1="6" x2="21" y2="6" />
+                      <line x1="8" y1="12" x2="21" y2="12" />
+                      <line x1="8" y1="18" x2="21" y2="18" />
+                      <line x1="3" y1="6" x2="3.01" y2="6" />
+                      <line x1="3" y1="12" x2="3.01" y2="12" />
+                      <line x1="3" y1="18" x2="3.01" y2="18" />
                     </svg>
                   </div>
 
@@ -370,7 +424,7 @@ export default function BudgetTab({
 
       {categories.length > 0 && (
         <div
-          ref={listRef}
+          ref={budgetListRef}
           style={{
             marginBottom: "16px",
             borderRadius: "12px",
@@ -396,12 +450,13 @@ export default function BudgetTab({
                 ? C.orange
                 : C.green;
 
-            const isDragging = dragIndex === index;
-            const isDropTarget = dropIndex === index && dragIndex !== null && dragIndex !== index;
+            const isBudgetDrag = dragStateRef.current.type === "budget";
+            const isDragging = isBudgetDrag && dragIndex === index;
+            const isDropTarget = isBudgetDrag && dropIndex === index && dragIndex !== null && dragIndex !== index;
 
             // Compute how much this row should shift to "open the gap" for the ghost card
             let rowShiftY = 0;
-            if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
+            if (isBudgetDrag && dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex) {
               const from = dragIndex;
               const to = dropIndex;
               const draggedH = dragStateRef.current.rowHeights[from] || dragStateRef.current.ghostHeight || 80;
@@ -805,7 +860,7 @@ export default function BudgetTab({
               transformOrigin: "top left",
               boxShadow: "0 20px 50px rgba(0,0,0,0.25), 0 6px 20px rgba(30,80,212,0.15)",
               borderRadius: "10px",
-              border: `2px solid ${C.blue}`,
+              border: `2px solid ${dragStateRef.current.type === "income" ? C.green : C.blue}`,
               overflow: "hidden",
               background: C.surface,
               opacity: 0.97,
@@ -823,41 +878,115 @@ export default function BudgetTab({
               }}
             >
               {/* Handle */}
-              <div style={{ flexShrink: 0, padding: "6px 4px", color: C.blue, display: "flex", alignItems: "center" }}>
+              <div
+                style={{
+                  flexShrink: 0,
+                  padding: "6px 4px",
+                  color: dragStateRef.current.type === "income" ? C.green : C.blue,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
                   <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
                 </svg>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: 1, minWidth: 0 }}>
-                {/* Circular progress ring */}
-                {(() => {
-                  const cat = categories[dragIndex];
-                  const budget = parseFloat(cat?.amount) || 0;
-                  const spent = spentByCategory[cat?.id] || 0;
-                  const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-                  const barColor = pct > 90 ? C.red : pct > 70 ? C.orange : C.blue;
-                  return (
+                {dragStateRef.current.type === "income" ? (
+                  <>
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      aria-hidden
+                    >
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={C.green}
+                        strokeWidth="2.25"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {incomeCategories[dragIndex]?.name}
+                      </div>
+                      <div style={{ fontSize: "13px", color: C.textLight, marginTop: "2px" }}>
+                        ${formatCurrency(parseFloat(incomeCategories[dragIndex]?.amount) || 0)} income
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
                     <div style={{ position: "relative", width: "44px", height: "44px", flexShrink: 0 }}>
                       <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
                         <circle cx="22" cy="22" r="18" fill="none" stroke={C.border} strokeWidth="4"/>
-                        <circle cx="22" cy="22" r="18" fill="none" stroke={barColor} strokeWidth="4" strokeLinecap="round"
-                          strokeDasharray={113.1} strokeDashoffset={113.1 - (pct / 100) * 113.1}/>
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          fill="none"
+                          stroke={
+                            (() => {
+                              const cat = categories[dragIndex];
+                              const budget = parseFloat(cat?.amount) || 0;
+                              const spent = spentByCategory[cat?.id] || 0;
+                              const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                              return pct > 90 ? C.red : pct > 70 ? C.orange : C.blue;
+                            })()
+                          }
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeDasharray={113.1}
+                          strokeDashoffset={
+                            (() => {
+                              const cat = categories[dragIndex];
+                              const budget = parseFloat(cat?.amount) || 0;
+                              const spent = spentByCategory[cat?.id] || 0;
+                              const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                              return 113.1 - (pct / 100) * 113.1;
+                            })()
+                          }
+                        />
                       </svg>
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: barColor }}>
-                        {Math.round(pct)}%
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: (() => {
+                        const cat = categories[dragIndex];
+                        const budget = parseFloat(cat?.amount) || 0;
+                        const spent = spentByCategory[cat?.id] || 0;
+                        const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                        return pct > 90 ? C.red : pct > 70 ? C.orange : C.blue;
+                      })() }}>
+                        {(() => {
+                          const cat = categories[dragIndex];
+                          const budget = parseFloat(cat?.amount) || 0;
+                          const spent = spentByCategory[cat?.id] || 0;
+                          const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                          return Math.round(pct);
+                        })()}%
                       </div>
                     </div>
-                  );
-                })()}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {categories[dragIndex]?.name}
-                  </div>
-                  <div style={{ fontSize: "13px", color: C.textLight, marginTop: "2px" }}>
-                    ${formatCurrency(parseFloat(categories[dragIndex]?.amount) || 0)} budget
-                  </div>
-                </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "15px", fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {categories[dragIndex]?.name}
+                      </div>
+                      <div style={{ fontSize: "13px", color: C.textLight, marginTop: "2px" }}>
+                        ${formatCurrency(parseFloat(categories[dragIndex]?.amount) || 0)} budget
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>,
