@@ -69,6 +69,13 @@ export default function GlobalStyles() {
       input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       input::placeholder { color: ${C.textLight}; }
       select option { background: ${C.surface}; color: ${C.text}; }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      [role="button"]:focus-visible {
+        outline: 2px solid ${C.blueMid};
+        outline-offset: 2px;
+      }
       
       .nav-btn:hover { background: rgba(255,255,255,0.3) !important; }
       .income-card:hover { box-shadow: 0 4px 20px rgba(30,80,212,0.25) !important; }
@@ -78,6 +85,7 @@ export default function GlobalStyles() {
       .cat-row:hover .row-actions { opacity: 1 !important; }
       .tx-row:hover { background: ${C.blueLight} !important; }
       .tx-row:hover .tx-actions { opacity: 1 !important; }
+      .tx-row:focus-within .tx-actions { opacity: 1 !important; }
       .del-btn:hover { color: ${C.red} !important; }
       .edit-lbl:hover { color: ${C.blue} !important; }
       .dupe-btn:hover { background: ${C.blueLight} !important; color: ${C.blue} !important; }
@@ -141,6 +149,7 @@ export default function GlobalStyles() {
         .hide-chk-mobile { display: none !important; }
         .show-btn-mobile { display: block !important; }
         .desktop-email-pill { display: none; }
+        .tx-actions { opacity: 1 !important; }
         .import-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .import-table-row { min-width: 0; }
         .import-review-grid { grid-template-columns: 28px minmax(0, 1.8fr) minmax(88px, auto) minmax(0, 1.1fr) 24px; gap: 6px; }

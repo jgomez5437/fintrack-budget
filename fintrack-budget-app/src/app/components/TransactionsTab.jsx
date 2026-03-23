@@ -1127,7 +1127,7 @@ export default function TransactionsTab({
                         ? C.surface
                         : C.surfaceAlt,
                     borderBottom:
-                      index < transactions.length - 1 ? `1px solid ${C.border}` : "none",
+                      index < filteredTransactions.length - 1 ? `1px solid ${C.border}` : "none",
                     transition: "background 0.15s",
                     userSelect: "none",
                     WebkitUserSelect: "none"
