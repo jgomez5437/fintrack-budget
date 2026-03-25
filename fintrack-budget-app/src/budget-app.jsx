@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Routes, Route, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { C, defaultData } from "./app/constants";
 import {
   buildBudgetSummary,
@@ -24,22 +25,21 @@ import {
 import GlobalStyles from "./app/components/GlobalStyles";
 import AuthScreen from "./app/components/AuthScreen";
 import Header from "./app/components/Header";
-import SummaryCards from "./app/components/SummaryCards";
-import SpendProgress from "./app/components/SpendProgress";
-import TabSwitcher from "./app/components/TabSwitcher";
-import BudgetTab from "./app/components/BudgetTab";
-import TransactionsTab from "./app/components/TransactionsTab";
-import BillsTab from "./app/components/BillsTab";
 import ImportReviewModal from "./app/components/ImportReviewModal";
 import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
 import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
 import AddCategoryModal from "./app/components/AddCategoryModal";
 import AddIncomeModal from "./app/components/AddIncomeModal";
-import CategoryAlertBanner from "./app/components/CategoryAlertBanner";
 import SkeletonDashboard from "./app/components/SkeletonDashboard";
 import NamePromptModal from "./app/components/NamePromptModal";
 import SettingsModal from "./app/components/SettingsModal";
 import WeeklySummaryModal from "./app/components/WeeklySummaryModal";
+import BottomNav from "./app/components/BottomNav";
+import Home from "./app/pages/Home";
+import Budget from "./app/pages/Budget";
+import Transactions from "./app/pages/Transactions";
+import Bills from "./app/pages/Bills";
+import Tools from "./app/pages/Tools";
 import {
   generateAndSaveSummary,
   getTodaysSummary,
@@ -1272,6 +1272,14 @@ export default function BudgetApp() {
     setImportRows(null);
   };
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   if (!isSupabaseConfigured()) {
     return (
       <div
@@ -1290,7 +1298,7 @@ export default function BudgetApp() {
           style={{
             maxWidth: "520px",
             background: C.surface,
-            border: `1px solid ${C.border}`,
+            border: `1.5px solid ${C.border}`,
             borderRadius: "24px",
             padding: "24px",
             boxShadow: "0 18px 48px rgba(15,28,77,0.08)",
@@ -1354,6 +1362,114 @@ export default function BudgetApp() {
     );
   }
 
+  const context = {
+    budgetLoaded,
+    firstName,
+    showUncategorizedAlert,
+    uncategorizedTransactions,
+    viewUncategorizedTransactions,
+    categoryAlertItems,
+    formatCurrency,
+    weeklySummary,
+    bannerDismissed,
+    setBannerDismissed,
+    setShowWeeklySummary,
+    session,
+    expectedSurplus,
+    expectedSurplusPositive,
+    income,
+    incomeCategories,
+    projectedMonthEndSpent,
+    spendPct,
+    spentByCategory,
+    earnedByCategory,
+    totalPlanned,
+    totalSpent,
+    transactions,
+    leftover,
+    leftoverPositive,
+    barColor,
+    data,
+    setData,
+    update,
+    editingSavings,
+    savingsInput,
+    savingsRef,
+    startSavingsEdit,
+    setSavingsInput,
+    saveSavings,
+    cancelSavingsEdit,
+    scrollToIncome,
+    incomeSectionRef,
+    addIncomeCategory,
+    deleteIncomeCategory,
+    updateIncomeCategory,
+    setShowAddIncomeModal,
+    editingId,
+    setEditingId,
+    editVal,
+    setEditVal,
+    startEdit,
+    saveEdit,
+    deleteCategory,
+    openInline,
+    closeInline,
+    inlineCatId,
+    inlineTx,
+    inlineAutocomplete,
+    inlineNameRef,
+    handleInlineNameChange,
+    pickInlineSuggestion,
+    setInlineTx,
+    submitInline,
+    setShowAddCategoryModal,
+    quickNameRef,
+    openQuickAdd,
+    resetQuickAdd,
+    handleQuickNameChange,
+    pickQuickSuggestion,
+    setQuickTx,
+    quickTx,
+    quickAutocomplete,
+    submitQuickAdd,
+    getCategoryById: (id) =>
+      data.categories.find((c) => c.id === parseInt(id, 10)) ||
+      incomeCategories.find((ic) => ic.id === parseInt(id, 10)),
+    uncategorizedAssignments,
+    uncategorizedSaveSuccess,
+    selectedTransactionIds,
+    setSelectedTransactionIds,
+    importError,
+    isImportDragActive,
+    mostRecentImportedTransactionLabel,
+    fileInputRef,
+    showTxForm,
+    newTx,
+    setNewTx,
+    autocomplete,
+    nameInputRef,
+    triggerImportPicker,
+    handleImportDragOver,
+    handleImportDragLeave,
+    handleImportDrop,
+    openTxForm,
+    closeTxForm,
+    handleNameChange,
+    pickSuggestion,
+    addTransaction,
+    deleteTransaction,
+    toggleTransactionSelection,
+    toggleAllTransactions,
+    deleteSelectedTransactions,
+    updateTransactionCategory,
+    assignSelectedTransactionsToCategory,
+    updateUncategorizedAssignment,
+    saveUncategorizedAssignments,
+    showUncategorizedSection,
+    addBill,
+    deleteBill,
+  };
+
   return (
     <div
       style={{
@@ -1361,6 +1477,7 @@ export default function BudgetApp() {
         background: C.bg,
         fontFamily: "'DM Sans', sans-serif",
         color: C.text,
+        paddingBottom: "80px", // space for bottom nav
       }}
     >
       <GlobalStyles />
@@ -1462,269 +1579,18 @@ export default function BudgetApp() {
       />
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
-        {!budgetLoaded ? (
-          <SkeletonDashboard />
-        ) : (
-          <>
-            {showUncategorizedAlert && (
-          <div
-            className="fade-up"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
-              padding: "14px 16px",
-              marginBottom: "18px",
-              background: C.goldLight,
-              border: `1.5px solid ${C.gold}`,
-              borderRadius: "14px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>
-                You have uncategorized transactions
-              </div>
-              <div style={{ fontSize: "12px", color: C.textMid, marginTop: "2px" }}>
-                {uncategorizedTransactions.length} transaction
-                {uncategorizedTransactions.length === 1 ? "" : "s"} need a category.
-              </div>
-            </div>
-
-            <button
-              onClick={viewUncategorizedTransactions}
-              style={{
-                background: C.blue,
-                border: "none",
-                color: C.white,
-                padding: "10px 14px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: 700,
-              }}
-            >
-              View Transactions
-            </button>
-          </div>
-        )}
-
-        <CategoryAlertBanner
-          alerts={categoryAlertItems}
-          formatCurrency={formatCurrency}
-          onDismiss={() => setCategoryAlertItems([])}
-        />
-
-        {firstName && (
-          <div className="fade-up" style={{
-            fontSize: "26px",
-            fontWeight: 800,
-            color: C.text,
-            marginBottom: "24px",
-            fontFamily: "'Playfair Display', serif"
-          }}>
-            Welcome, {firstName}
-          </div>
-        )}
-
-        {/* Weekly summary banner — per-user dismiss via localStorage */}
-        {weeklySummary && !bannerDismissed && (() => {
-          // Check if this specific user already dismissed this week's banner
-          const dismissKey = `weekly-banner-dismissed-${session?.user?.id}-${weeklySummary.generated_on}`;
-          if (typeof window !== 'undefined' && localStorage.getItem(dismissKey)) {
-            return null;
-          }
-          return (
-            <div
-              className="fade-up"
-              onClick={() => {
-                const dismissKey = `weekly-banner-dismissed-${session?.user?.id}-${weeklySummary.generated_on}`;
-                localStorage.setItem(dismissKey, '1');
-                setBannerDismissed(true);
-                setShowWeeklySummary(true);
-              }}
-              style={{
-                cursor: "pointer",
-                marginBottom: "16px",
-                padding: "12px 16px",
-                background: `linear-gradient(90deg, ${C.blue} 0%, #6366f1 100%)`,
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                boxShadow: "0 4px 16px rgba(30,80,212,0.2)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none">
-                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
-                </svg>
-                <span style={{ fontSize: "14px", fontWeight: 700, color: C.white }}>
-                  Your weekly summary is ready →
-                </span>
-              </div>
-              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
-                Tap to read
-              </span>
-            </div>
-          );
-        })()}
-
-        <SummaryCards
-          onScrollToIncome={scrollToIncome}
-          expectedSurplus={expectedSurplus}
-          expectedSurplusPositive={expectedSurplusPositive}
-          income={income}
-          projectedMonthEndSpent={projectedMonthEndSpent}
-          totalPlanned={totalPlanned}
-          totalSpent={totalSpent}
-          transactionCount={transactions.length}
-          formatCurrency={formatCurrency}
-          spendPct={spendPct}
-          barColor={barColor}
-          currentSavings={data.currentSavings || ""}
-          editingSavings={editingSavings}
-          savingsInput={savingsInput}
-          savingsRef={savingsRef}
-          onStartSavingsEdit={startSavingsEdit}
-          onSavingsInputChange={setSavingsInput}
-          onSaveSavings={saveSavings}
-          onCancelSavingsEdit={cancelSavingsEdit}
-          onOpenWeeklySummary={() => setShowWeeklySummary(true)}
-          hasWeeklySummary={Boolean(weeklySummary)}
-        />
-
-        <div ref={tabSwitcherRef} style={{ scrollMarginTop: "24px" }}>
-          <TabSwitcher 
-            activeTab={activeTab} 
-            onTabChange={(key) => {
-              setActiveTab(key);
-              if (key === "budget") {
-                scrollToIncome();
-              } else {
-                setTimeout(() => {
-                  tabSwitcherRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  });
-                }, 50);
-              }
-            }} 
-          />
-        </div>
-
-        {activeTab === "budget" && (
-          <BudgetTab
-            incomeSectionRef={incomeSectionRef}
-            incomeCategories={incomeCategories}
-            earnedByCategory={earnedByCategory}
-            onAddIncomeCategory={addIncomeCategory}
-            onDeleteIncomeCategory={deleteIncomeCategory}
-            onUpdateIncomeCategory={updateIncomeCategory}
-            onOpenAddIncome={() => setShowAddIncomeModal(true)}
-            categories={data.categories}
-            spentByCategory={spentByCategory}
-            editingId={editingId}
-            editVal={editVal}
-            inlineCatId={inlineCatId}
-            inlineTx={inlineTx}
-            inlineAutocomplete={inlineAutocomplete}
-            quickTx={quickTx}
-            quickAutocomplete={quickAutocomplete}
-            showQuickAdd={showQuickAdd}
-            formatCurrency={formatCurrency}
-            onEditValueChange={setEditVal}
-            onStartEdit={startEdit}
-            onSaveEdit={saveEdit}
-            onCancelEdit={() => setEditingId(null)}
-            onDeleteCategory={deleteCategory}
-            onOpenInline={openInline}
-            onCloseInline={closeInline}
-            inlineNameRef={inlineNameRef}
-            onInlineNameChange={handleInlineNameChange}
-            onPickInlineSuggestion={pickInlineSuggestion}
-            onInlineAmountChange={(value) =>
-              setInlineTx((current) => ({ ...current, amount: value }))
-            }
-            onSubmitInline={submitInline}
-            onOpenAddCategory={() => setShowAddCategoryModal(true)}
-            quickNameRef={quickNameRef}
-            onOpenQuickAdd={openQuickAdd}
-            onCloseQuickAdd={resetQuickAdd}
-            onQuickNameChange={handleQuickNameChange}
-            onPickQuickSuggestion={pickQuickSuggestion}
-            onQuickAmountChange={(value) =>
-              setQuickTx((current) => ({ ...current, amount: value }))
-            }
-            onQuickCategoryChange={(value) =>
-              setQuickTx((current) => ({ ...current, categoryId: value }))
-            }
-            onSubmitQuickAdd={submitQuickAdd}
-            onReorderCategories={(reordered) => {
-              setData((prev) => ({ ...prev, categories: reordered }));
-            }}
-            onReorderIncomeCategories={(reordered) => {
-              setData((prev) => ({ ...prev, incomeCategories: reordered }));
-            }}
-          />
-        )}
-        {activeTab === "transactions" && (
-          <TransactionsTab
-            categories={data.categories}
-            incomeCategories={incomeCategories}
-            transactions={transactions}
-            uncategorizedTransactions={uncategorizedTransactions}
-            showUncategorizedSection={showUncategorizedSection}
-            uncategorizedAssignments={uncategorizedAssignments}
-            uncategorizedSaveSuccess={uncategorizedSaveSuccess}
-            selectedTransactionIds={selectedTransactionIds}
-            spentByCategory={spentByCategory}
-            formatCurrency={formatCurrency}
-            getCategoryById={(id) =>
-              data.categories.find((c) => c.id === parseInt(id, 10)) ||
-              incomeCategories.find((ic) => ic.id === parseInt(id, 10))
-            }
-            importError={importError}
-            isImportDragActive={isImportDragActive}
-            mostRecentImportedTransactionLabel={mostRecentImportedTransactionLabel}
-            fileInputRef={fileInputRef}
-            showTxForm={showTxForm}
-            newTx={newTx}
-            autocomplete={autocomplete}
-            nameInputRef={nameInputRef}
-            onOpenImportPicker={triggerImportPicker}
-            onImportDragOver={handleImportDragOver}
-            onImportDragLeave={handleImportDragLeave}
-            onImportDrop={handleImportDrop}
-            onOpenTxForm={openTxForm}
-            onCloseTxForm={closeTxForm}
-            onNameChange={handleNameChange}
-            onPickSuggestion={pickSuggestion}
-            onNewTransactionChange={setNewTx}
-            onAddTransaction={addTransaction}
-            onDeleteTransaction={deleteTransaction}
-            onToggleTransactionSelection={toggleTransactionSelection}
-            onToggleAllTransactions={toggleAllTransactions}
-            onClearSelections={() => setSelectedTransactionIds([])}
-            onDeleteSelectedTransactions={deleteSelectedTransactions}
-            onUpdateTransactionCategory={updateTransactionCategory}
-            onAssignSelectedTransactions={assignSelectedTransactionsToCategory}
-            onUncategorizedAssignmentChange={updateUncategorizedAssignment}
-            onSaveUncategorizedAssignments={saveUncategorizedAssignments}
-          />
-        )}
-        {activeTab === "bills" && (
-          <BillsTab
-            bills={data.bills || []}
-            onAddBill={addBill}
-            onDeleteBill={deleteBill}
-            formatCurrency={formatCurrency}
-          />
-        )}
-          </>
-        )}
+        <Routes>
+          <Route element={<Outlet context={context} />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/budget" element={<Budget />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/bills" element={<Bills />} />
+            <Route path="/tools" element={<Tools />} />
+          </Route>
+        </Routes>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
