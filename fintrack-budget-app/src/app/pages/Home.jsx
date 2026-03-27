@@ -36,6 +36,7 @@ export default function Home() {
     saveSavings,
     cancelSavingsEdit,
     scrollToIncome,
+    getCategoryById,
   } = useOutletContext();
 
   if (!budgetLoaded) return <SkeletonDashboard />;
@@ -154,6 +155,8 @@ export default function Home() {
         onCancelSavingsEdit={cancelSavingsEdit}
         onOpenWeeklySummary={() => setShowWeeklySummary(true)}
         hasWeeklySummary={Boolean(weeklySummary)}
+        transactions={transactions}
+        getCategoryById={getCategoryById}
       />
     </>
   );

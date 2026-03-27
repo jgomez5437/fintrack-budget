@@ -1,7 +1,19 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { C } from "../constants";
 
 export default function BottomNav() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
   const navItems = [
     {
       to: "/",
@@ -56,9 +68,27 @@ export default function BottomNav() {
     },
   ];
 
-  return (
-    <nav
-      style={{
+  // Keep the nav tucked just to the left of the main content (max 680px wide).
+  // Width is constrained so it doesn't span the full height/width.
+  const navStyle = isDesktop
+    ? {
+        position: "fixed",
+        top: "120px",
+        left: "max(12px, calc((100vw - 680px)/2 - 190px))",
+        width: "176px",
+        background: `linear-gradient(180deg, ${C.surface} 0%, ${C.surfaceAlt} 100%)`,
+        border: `1px solid ${C.border}`,
+        borderRadius: "18px",
+        padding: "10px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        boxShadow: "0 16px 40px rgba(15,28,77,0.12)",
+        zIndex: 1000,
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+      }
+    : {
         position: "fixed",
         bottom: 0,
         left: 0,
@@ -73,7 +103,11 @@ export default function BottomNav() {
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         transition: "background 0.3s",
-      }}
+      };
+
+  return (
+    <nav
+      style={navStyle}
     >
       {navItems.map((item) => (
         <NavLink
@@ -81,25 +115,38 @@ export default function BottomNav() {
           to={item.to}
           style={({ isActive }) => ({
             display: "flex",
-            flexDirection: "column",
+            flexDirection: isDesktop ? "row" : "column",
             alignItems: "center",
-            gap: "4px",
+            justifyContent: isDesktop ? "flex-start" : "center",
+            gap: isDesktop ? "10px" : "4px",
             textDecoration: "none",
             color: isActive ? C.blue : C.textLight,
             transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            padding: "8px 12px",
+            padding: isDesktop ? "10px 12px" : "8px 12px",
             borderRadius: "12px",
-            minWidth: "64px",
-            transform: isActive ? "translateY(-2px)" : "none",
-            background: isActive ? `${C.blue}10` : "transparent",
+            minWidth: isDesktop ? "auto" : "64px",
+            transform: isActive && !isDesktop ? "translateY(-2px)" : "none",
+            background: isActive
+              ? isDesktop
+                ? `${C.blue}14`
+                : `${C.blue}10`
+              : "transparent",
+            boxShadow:
+              isDesktop && isActive ? "0 10px 30px rgba(30,80,212,0.2)" : "none",
           })}
         >
           <div style={{
             transition: "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            display: "flex",
+            alignItems: "center",
           }}>
             {item.icon}
           </div>
-          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2px" }}>
+          <span style={{
+            fontSize: isDesktop ? "13px" : "10px",
+            fontWeight: 700,
+            letterSpacing: isDesktop ? "0.1px" : "0.2px",
+          }}>
             {item.label}
           </span>
         </NavLink>

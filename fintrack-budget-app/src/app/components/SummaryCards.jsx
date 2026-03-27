@@ -22,6 +22,8 @@ export default function SummaryCards({
   onCancelSavingsEdit,
   onOpenWeeklySummary,
   hasWeeklySummary,
+  transactions = [],
+  getCategoryById,
 }) {
   const neutralCardStyle = {
     background: C.surface,
@@ -29,6 +31,34 @@ export default function SummaryCards({
     borderRadius: "14px",
     padding: "20px",
     boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+  };
+
+  const getSortValue = (transaction, index) => {
+    if (typeof transaction.importDateValue === "number") return transaction.importDateValue;
+    const parsedDate = transaction.date ? Date.parse(transaction.date) : Number.NaN;
+    if (!Number.isNaN(parsedDate)) return parsedDate;
+    const numericId = Number(transaction.id);
+    if (!Number.isNaN(numericId)) return numericId;
+    return index;
+  };
+
+  const recentTransactions = (transactions || [])
+    .map((transaction, index) => ({
+      transaction,
+      sortValue: getSortValue(transaction, index),
+    }))
+    .sort((first, second) => second.sortValue - first.sortValue)
+    .slice(0, 3)
+    .map((entry) => entry.transaction);
+
+  const renderCategoryLabel = (transaction) => {
+    if (transaction.isSplit && transaction.splits?.length) {
+      return `${transaction.splits.length} categories`;
+    }
+    if (!getCategoryById) return transaction.categoryId ? "Uncategorized" : "Uncategorized";
+    const category = getCategoryById(transaction.categoryId);
+    if (category) return category.name;
+    return "Uncategorized";
   };
 
   return (
@@ -419,6 +449,115 @@ export default function SummaryCards({
         </div>
       </div>
 
+      <div
+        style={{
+          ...neutralCardStyle,
+          gridColumn: "span 2",
+          padding: "20px",
+        }}
+      >
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "10px",
+        }}>
+          <div style={{
+            fontSize: "11px",
+            color: C.textLight,
+            letterSpacing: "2px",
+            fontWeight: 700,
+          }}>
+            RECENT TRANSACTIONS
+          </div>
+          <div style={{ fontSize: "12px", color: C.textMid, fontWeight: 600 }}>
+            Last 3
+          </div>
+        </div>
+
+        {recentTransactions.length === 0 ? (
+          <div style={{
+            padding: "8px 0",
+            fontSize: "13px",
+            color: C.textLight,
+            fontWeight: 600,
+          }}>
+            You have no transactions yet.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {recentTransactions.map((transaction, index) => {
+              const amountValue = parseFloat(transaction.amount) || 0;
+              const isIncome = amountValue < 0;
+              const amountColor = isIncome ? C.green : C.red;
+              const amountLabel = `${isIncome ? "+" : ""}$${formatCurrency(Math.abs(amountValue))}`;
+              const categoryLabel = renderCategoryLabel(transaction);
+
+              return (
+                <div
+                  key={transaction.id || index}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    background: index % 2 === 0 ? C.surfaceAlt : C.surface,
+                    border: `1px solid ${C.border}`,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      color: C.text,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {transaction.name}
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginTop: "4px",
+                      flexWrap: "wrap",
+                    }}>
+                      <span style={{ fontSize: "12px", color: C.textLight, fontWeight: 600 }}>
+                        {transaction.date || "No date"}
+                      </span>
+                      {categoryLabel && (
+                        <span style={{
+                          fontSize: "11px",
+                          color: C.textMid,
+                          background: C.surface,
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          border: `1px solid ${C.border}`,
+                          fontWeight: 700,
+                        }}>
+                          {categoryLabel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "15px", fontWeight: 800, color: amountColor }}>
+                      {amountLabel}
+                    </div>
+                    <div style={{ fontSize: "11px", color: C.textLight, fontWeight: 600 }}>
+                      {transaction.importSource ? "Imported" : "Added"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
