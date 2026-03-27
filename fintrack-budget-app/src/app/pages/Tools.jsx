@@ -1,35 +1,38 @@
-import { useOutletContext } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { C } from "../constants";
 
 export default function Tools() {
-  const { formatCurrency, income, totalSpent } = useOutletContext();
+  const navigate = useNavigate();
 
   const toolCards = [
     {
-      title: "Currency Converter",
-      description: "Quickly convert between USD, EUR, GBP and more.",
+      title: "Mortgage Calculator",
+      description: "See your monthly payment and principal vs interest over the life of the loan.",
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+          <path d="M3 9l9-7 9 7" />
+          <path d="M9 22V12h6v10" />
+          <path d="M3 9v12h18V9" />
         </svg>
       ),
       color: C.blue,
+      to: "/tools/mortgage",
     },
     {
-      title: "Savings Calculator",
-      description: "Plan your future by calculating compound interest.",
+      title: "Retirement / Savings Growth",
+      description: "Project how today’s savings and monthly contributions compound over time.",
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
+          <path d="M3 17l6-6 4 4 8-8" />
+          <path d="M14 7h7v7" />
         </svg>
       ),
       color: C.green,
+      to: "/tools/retirement",
     },
     {
       title: "Debt Payoff",
-      description: "Strategize your debt repayment using Snowball or Avalanche.",
+      description: "Compare Snowball vs Avalanche, payoff timelines, and total interest saved.",
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
@@ -37,19 +40,20 @@ export default function Tools() {
         </svg>
       ),
       color: C.red,
+      to: "/tools/debt",
     },
     {
-      title: "Tax Estimator",
-      description: "Get a rough estimate of your tax liability for the year.",
+      title: "Emergency Fund Builder",
+      description: "Pick months of expenses, see your goal, and map out how to hit it.",
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <line x1="12" y1="8" x2="12" y2="16" />
-          <line x1="8" y1="12" x2="16" y2="12" />
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 3" />
         </svg>
       ),
       color: C.gold,
-    }
+      to: "/tools/emergency",
+    },
   ];
 
   return (
@@ -87,6 +91,7 @@ export default function Tools() {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.03)";
             }}
+            onClick={() => navigate(tool.to)}
           >
             <div style={{
               width: "48px",
@@ -109,7 +114,7 @@ export default function Tools() {
               </div>
             </div>
             <div style={{ marginTop: "auto", display: "flex", justifyContent: "flex-end" }}>
-              <span style={{ fontSize: "13px", fontWeight: 700, color: tool.color }}>Open Tool →</span>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: tool.color }}>Open Tool &rarr;</span>
             </div>
           </div>
         ))}

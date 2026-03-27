@@ -40,6 +40,10 @@ import Budget from "./app/pages/Budget";
 import Transactions from "./app/pages/Transactions";
 import Bills from "./app/pages/Bills";
 import Tools from "./app/pages/Tools";
+import ToolsMortgage from "./app/pages/ToolsMortgage";
+import ToolsRetirement from "./app/pages/ToolsRetirement";
+import ToolsDebt from "./app/pages/ToolsDebt";
+import ToolsEmergency from "./app/pages/ToolsEmergency";
 import {
   generateAndSaveSummary,
   getTodaysSummary,
@@ -1586,6 +1590,10 @@ export default function BudgetApp() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/bills" element={<Bills />} />
             <Route path="/tools" element={<Tools />} />
+            <Route path="/tools/mortgage" element={<ToolsMortgage />} />
+            <Route path="/tools/retirement" element={<ToolsRetirement />} />
+            <Route path="/tools/debt" element={<ToolsDebt />} />
+            <Route path="/tools/emergency" element={<ToolsEmergency />} />
           </Route>
         </Routes>
       </div>
