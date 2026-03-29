@@ -105,7 +105,8 @@ export default function Transactions() {
       ) : (
         <RecurringTab 
           recurring={context.data.recurring || []} 
-          formatCurrency={context.formatCurrency} 
+          formatCurrency={context.formatCurrency}
+          getCategoryById={context.getCategoryById}
         />
       )}
     </>

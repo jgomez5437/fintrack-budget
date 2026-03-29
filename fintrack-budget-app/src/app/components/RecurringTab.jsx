@@ -3,6 +3,7 @@ import { C } from "../constants";
 export default function RecurringTab({
   recurring,
   formatCurrency,
+  getCategoryById,
 }) {
   return (
     <div className="fade-up">
@@ -30,7 +31,9 @@ export default function RecurringTab({
 
         {recurring && recurring.length > 0 ? (
           <div style={{ display: "grid", gap: "10px" }}>
-            {recurring.map((item, index) => (
+            {recurring.map((item, index) => {
+              const category = getCategoryById ? getCategoryById(item.categoryId) : null;
+              return (
               <div
                 key={item.id || index}
                 style={{
@@ -64,10 +67,18 @@ export default function RecurringTab({
                         color: C.textMid,
                         marginTop: "4px",
                         fontWeight: 500,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
                       }}
                     >
-                      Renews on the {item.dayOfMonth}
-                      {["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}
+                      <span>Renews on the {item.dayOfMonth}{["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}</span>
+                      {category && (
+                        <>
+                          <span>•</span>
+                          <span style={{ color: C.blueMid, fontWeight: 600 }}>{category.name}</span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -83,7 +94,8 @@ export default function RecurringTab({
                   ${formatCurrency(Math.abs(parseFloat(item.amount)))}
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         ) : (
           <div

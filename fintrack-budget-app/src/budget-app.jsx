@@ -1212,7 +1212,7 @@ export default function BudgetApp() {
     setImportError("");
     try {
       const parsedRows = await parseImportFile(file);
-      const categorizedRows = autoAssignImportCategory(parsedRows, data.categories);
+      const categorizedRows = autoAssignImportCategory(parsedRows, data.categories, data.recurring || []);
       setImportRows(categorizedRows);
 
       // Detect recurring

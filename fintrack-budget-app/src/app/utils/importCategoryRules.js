@@ -23,7 +23,7 @@ function normalizeMerchantValue(value) {
     .trim();
 }
 
-export function autoAssignImportCategory(rows, categories) {
+export function autoAssignImportCategory(rows, categories, recurring = []) {
   const categoriesByName = new Map(
     categories.map((category) => [category.name.trim().toLowerCase(), String(category.id)]),
   );
@@ -36,11 +36,30 @@ export function autoAssignImportCategory(rows, categories) {
   return rows.map((row) => {
     const normalizedRaw = normalizeMerchantValue(row.rawDesc);
     const normalizedName = normalizeMerchantValue(row.name);
+    
+    // First check against hard-coded rules
     const matchedRule = normalizedRules.find(
       (rule) =>
         normalizedRaw.includes(rule.merchant) || normalizedName.includes(rule.merchant),
     );
 
-    return matchedRule ? { ...row, categoryId: matchedRule.categoryId } : row;
+    if (matchedRule) {
+      return { ...row, categoryId: matchedRule.categoryId };
+    }
+
+    // Then check against known recurring transactions (must match name exactly or normalized, and price)
+    const matchedRecurring = recurring.find(
+      (r) => 
+        (r.name.trim().toLowerCase() === row.name.trim().toLowerCase() ||
+         normalizeMerchantValue(r.name) === normalizedName) &&
+        Math.abs(r.amount) === Math.abs(row.amount) &&
+        r.categoryId
+    );
+
+    if (matchedRecurring) {
+      return { ...row, categoryId: String(matchedRecurring.categoryId) };
+    }
+
+    return row;
   });
 }
