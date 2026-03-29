@@ -11,6 +11,8 @@ export default function TransactionDetailsModal({
   onCategoryChange,
   onSave,
   onClose,
+  recurring = [],
+  onToggleRecurring,
 }) {
   const [isSplit, setIsSplit] = useState(transaction.isSplit || false);
   const [split1, setSplit1] = useState(
@@ -291,6 +293,53 @@ export default function TransactionDetailsModal({
                 </div>
               </div>
             )}
+          </div>
+          
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: "14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>
+                  Recurring Transaction
+                </div>
+                <div style={{ fontSize: "12px", color: C.textMid, marginTop: "2px" }}>
+                  Mark as recurring to track when it renews
+                </div>
+              </div>
+              
+              <label style={{ position: "relative", display: "inline-block", width: "42px", height: "24px" }}>
+                <input
+                  type="checkbox"
+                  checked={recurring.some((r) => r.name.toLowerCase() === transaction.name.toLowerCase())}
+                  onChange={() => {
+                    if (onToggleRecurring) {
+                      onToggleRecurring(transaction);
+                    }
+                  }}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                  position: "absolute",
+                  cursor: "pointer",
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: recurring.some((r) => r.name.toLowerCase() === transaction.name.toLowerCase()) ? C.blue : C.border,
+                  transition: ".4s",
+                  borderRadius: "24px",
+                }}>
+                  <span style={{
+                    position: "absolute",
+                    content: '""',
+                    height: "18px",
+                    width: "18px",
+                    left: "3px",
+                    bottom: "3px",
+                    backgroundColor: "white",
+                    transition: ".4s",
+                    borderRadius: "50%",
+                    transform: recurring.some((r) => r.name.toLowerCase() === transaction.name.toLowerCase()) ? "translateX(18px)" : "translateX(0)",
+                  }}></span>
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 

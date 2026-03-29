@@ -99,6 +99,8 @@ export default function Transactions() {
           onAssignSelectedTransactions={context.assignSelectedTransactionsToCategory}
           onUncategorizedAssignmentChange={context.updateUncategorizedAssignment}
           onSaveUncategorizedAssignments={context.saveUncategorizedAssignments}
+          onToggleRecurring={context.toggleRecurring}
+          recurring={context.data.recurring || []}
         />
       ) : (
         <RecurringTab 

@@ -43,6 +43,8 @@ export default function TransactionsTab({
   onAssignSelectedTransactions,
   onUncategorizedAssignmentChange,
   onSaveUncategorizedAssignments,
+  recurring,
+  onToggleRecurring,
 }) {
   const selectedCount = selectedTransactionIds.length;
   const allSelected = transactions.length > 0 && selectedCount === transactions.length;
@@ -171,6 +173,8 @@ export default function TransactionsTab({
           onSave={saveTransactionCategory}
           onClose={closeTransactionDetails}
           formatCurrency={formatCurrency}
+          recurring={recurring}
+          onToggleRecurring={onToggleRecurring}
         />
       )}
 

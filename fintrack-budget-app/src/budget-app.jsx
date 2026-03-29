@@ -1315,6 +1315,29 @@ export default function BudgetApp() {
     setImportRows(null);
   };
 
+  const toggleRecurring = (transaction) => {
+    const existingIndex = (data.recurring || []).findIndex(
+      (r) => r.name.toLowerCase() === transaction.name.toLowerCase()
+    );
+
+    if (existingIndex >= 0) {
+      const newRecurring = [...(data.recurring || [])];
+      newRecurring.splice(existingIndex, 1);
+      update({ ...data, recurring: newRecurring });
+    } else {
+      const newRecurring = [
+        ...(data.recurring || []),
+        {
+          id: Date.now() + Math.random(),
+          name: transaction.name,
+          amount: parseFloat(Math.abs(transaction.amount)),
+          dayOfMonth: extractDayOfMonth(transaction.date) || 1,
+        },
+      ];
+      update({ ...data, recurring: newRecurring });
+    }
+  };
+
   const location = useLocation();
 
   // Scroll to top on route change
@@ -1510,6 +1533,7 @@ export default function BudgetApp() {
     showUncategorizedSection,
     addBill,
     deleteBill,
+    toggleRecurring,
   };
 
   return (
