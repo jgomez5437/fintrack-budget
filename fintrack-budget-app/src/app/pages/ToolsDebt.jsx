@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants";
 
@@ -67,6 +67,16 @@ function ConfirmBackModal({ open, onConfirm, onCancel }) {
 export default function ToolsDebt() {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const media = window.matchMedia("(max-width: 768px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   const [debts, setDebts] = useState([
     { name: "", balance: "", rate: "", min: "" },
@@ -111,7 +121,12 @@ export default function ToolsDebt() {
         <div style={{ fontSize: "22px", fontWeight: 800, color: C.text }}>Debt Payoff</div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", alignItems: "start" }}>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr",
+        gap: "16px",
+        alignItems: "start",
+      }}>
         <div style={{ background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: "16px", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontWeight: 800, color: C.text }}>Your debts</div>
@@ -132,7 +147,18 @@ export default function ToolsDebt() {
           </div>
 
           {debts.map((debt, idx) => (
-            <div key={idx} style={{ border: `1.5px solid ${C.border}`, borderRadius: "12px", padding: "12px", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr)) 40px", gap: "10px", alignItems: "end" }}>
+            <div
+              key={idx}
+              style={{
+                border: `1.5px solid ${C.border}`,
+                borderRadius: "12px",
+                padding: "12px",
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr)) 40px",
+                gap: "10px",
+                alignItems: "end",
+              }}
+            >
               <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <span style={{ fontSize: "11px", color: C.textLight, fontWeight: 700 }}>Name</span>
                 <input value={debt.name} onChange={(e) => updateDebt(idx, "name", e.target.value)} style={inputStyle} />
