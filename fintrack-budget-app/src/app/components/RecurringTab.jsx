@@ -67,15 +67,13 @@ export default function RecurringTab({
                         color: C.textMid,
                         marginTop: "4px",
                         fontWeight: 500,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px"
+                        lineHeight: 1.4,
                       }}
                     >
-                      <span>Renews on the {item.dayOfMonth}{["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}</span>
+                      Renews on the {item.dayOfMonth}{["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}
                       {category && (
                         <>
-                          <span>•</span>
+                          {" • "}
                           <span style={{ color: C.blue, fontWeight: 700 }}>{category.name}</span>
                         </>
                       )}
