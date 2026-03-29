@@ -13,24 +13,30 @@ export default function RecurringTab({
           background: C.surface,
           border: `1.5px solid ${C.border}`,
           borderRadius: "14px",
-          padding: "20px",
           boxShadow: "0 4px 16px rgba(30,80,212,0.1)",
+          overflow: "hidden",
         }}
       >
         <div
           style={{
-            fontSize: "12px",
-            color: C.textLight,
-            letterSpacing: "2px",
-            marginBottom: "16px",
-            fontWeight: 600,
+            padding: "20px",
+            borderBottom: recurring && recurring.length > 0 ? `1px solid ${C.border}` : "none",
           }}
         >
-          RECURRING SUBSCRIPTIONS & BILLS
+          <div
+            style={{
+              fontSize: "12px",
+              color: C.textLight,
+              letterSpacing: "2px",
+              fontWeight: 600,
+            }}
+          >
+            RECURRING SUBSCRIPTIONS & BILLS
+          </div>
         </div>
 
         {recurring && recurring.length > 0 ? (
-          <div style={{ display: "grid", gap: "10px" }}>
+          <div>
             {recurring.map((item, index) => {
               const category = getCategoryById ? getCategoryById(item.categoryId) : null;
               return (
@@ -39,19 +45,17 @@ export default function RecurringTab({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   gap: "12px",
-                  padding: "16px",
-                  borderRadius: "12px",
-                  background: index % 2 === 0 ? C.surfaceAlt : C.surface,
-                  border: `1px solid ${C.border}`,
+                  padding: "14px 18px",
+                  background: index % 2 === 0 ? C.surface : C.surfaceAlt,
+                  borderBottom: index < recurring.length - 1 ? `1px solid ${C.border}` : "none",
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "16px",
-                      fontWeight: 700,
+                      fontSize: "15px",
+                      fontWeight: 600,
                       color: C.text,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -63,32 +67,58 @@ export default function RecurringTab({
                   {item.dayOfMonth && (
                     <div
                       style={{
-                        fontSize: "13px",
-                        color: C.textMid,
-                        marginTop: "4px",
-                        fontWeight: 500,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginTop: "3px",
+                        flexWrap: "wrap",
                       }}
                     >
-                      Renews on the {item.dayOfMonth}{["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}
-                      {category && (
-                        <>
-                          {" • "}
-                          <span style={{ color: C.blue, fontWeight: 700 }}>{category.name}</span>
-                        </>
+                      {category ? (
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: C.blue,
+                            background: C.blueLight,
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {category.name}
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: C.textLight,
+                            background: C.surfaceAlt,
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          Uncategorized
+                        </div>
                       )}
+                      
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: C.textLight,
+                        }}
+                      >
+                        Renews on the {item.dayOfMonth}{["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}
+                      </div>
                     </div>
                   )}
                 </div>
 
                 <div
                   style={{
-                    fontSize: "18px",
-                    fontWeight: 800,
+                    fontSize: "15px",
+                    fontWeight: 700,
                     color: C.text,
-                    textAlign: "right",
+                    flexShrink: 0
                   }}
                 >
                   ${formatCurrency(Math.abs(parseFloat(item.amount)))}
@@ -103,8 +133,6 @@ export default function RecurringTab({
               padding: "40px 20px",
               textAlign: "center",
               background: C.surfaceAlt,
-              borderRadius: "12px",
-              border: `1px dashed ${C.borderHover}`,
             }}
           >
             <div
