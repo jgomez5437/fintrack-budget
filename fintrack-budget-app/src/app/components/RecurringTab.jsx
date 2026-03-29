@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { C } from "../constants";
 
@@ -8,6 +8,14 @@ export default function RecurringTab({
   getCategoryById,
 }) {
   const [selectedDay, setSelectedDay] = useState(null);
+  const scrollRef = useRef(null);
+
+  const scrollCarousel = (direction) => {
+    if (scrollRef.current) {
+      const amount = direction === "left" ? -250 : 250;
+      scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
+    }
+  };
 
   // Group recurring items by dayOfMonth
   const groupedByDay = useMemo(() => {
@@ -151,18 +159,39 @@ export default function RecurringTab({
           >
             UPCOMING RENEWALS
           </div>
-          <div
-            className="hide-scrollbar"
-            style={{
-              display: "flex",
-              gap: "12px",
-              overflowX: "auto",
-              paddingBottom: "8px",
-              margin: "0 -20px",
-              padding: "0 20px 8px 20px",
-            }}
-          >
-            {groupedByDay.map(({ day, items, totalAmount }) => (
+          <div style={{ position: "relative", margin: "0 -20px" }}>
+            <button
+              className="carousel-arrow"
+              style={{ left: "12px" }}
+              onClick={() => scrollCarousel("left")}
+              aria-label="Scroll left"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button
+              className="carousel-arrow"
+              style={{ right: "12px" }}
+              onClick={() => scrollCarousel("right")}
+              aria-label="Scroll right"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+            <div
+              ref={scrollRef}
+              className="hide-scrollbar"
+              style={{
+                display: "flex",
+                gap: "12px",
+                overflowX: "auto",
+                paddingBottom: "8px",
+                padding: "0 20px 8px 20px",
+              }}
+            >
+              {groupedByDay.map(({ day, items, totalAmount }) => (
               <div
                 key={day}
                 onClick={() => setSelectedDay(day)}
@@ -217,6 +246,7 @@ export default function RecurringTab({
                 </div>
               </div>
             ))}
+            </div>
           </div>
         </div>
       )}
@@ -386,6 +416,34 @@ export default function RecurringTab({
         @keyframes slideUpModal {
           0% { transform: translateY(100%); opacity: 0; }
           100% { transform: translateY(0); opacity: 1; }
+        }
+        .carousel-arrow {
+          position: absolute;
+          top: calc(50% - 4px);
+          transform: translateY(-50%);
+          background: ${C.surface};
+          border: 1.5px solid ${C.borderHover};
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 10;
+          color: ${C.textMid};
+          transition: all 0.2s;
+        }
+        .carousel-arrow:hover {
+          background: ${C.surfaceAlt};
+          color: ${C.text};
+          transform: translateY(-50%) scale(1.05);
+        }
+        @media (hover: none) and (pointer: coarse) {
+          .carousel-arrow {
+            display: none;
+          }
         }
       `}</style>
     </div>
