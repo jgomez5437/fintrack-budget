@@ -76,7 +76,7 @@ export default function RecurringTab({
                       {category && (
                         <>
                           <span>•</span>
-                          <span style={{ color: C.blueMid, fontWeight: 600 }}>{category.name}</span>
+                          <span style={{ color: C.blue, fontWeight: 700 }}>{category.name}</span>
                         </>
                       )}
                     </div>
