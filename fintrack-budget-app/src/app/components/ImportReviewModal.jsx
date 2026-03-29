@@ -98,9 +98,8 @@ export default function ImportReviewModal({
           }}
         >
           <strong style={{ color: C.blue }}>Review before importing.</strong>{" "}
-          Merchant names have been cleaned automatically. Edit any name, assign
-          categories, and uncheck rows you don't want. Transactions without a
-          category will still be imported and can be categorized later.
+          FinTrack AI has automatically cleaned names and flagged potential <strong>Recurring</strong> subscriptions. 
+          Edit any name, toggle the recurring status, assign categories, and uncheck rows you don't want.
         </div>
 
         <div className="import-table-container">
@@ -168,25 +167,51 @@ export default function ImportReviewModal({
                 />
 
                 <div style={{ minWidth: 0 }}>
-                  <input
-                    value={row.name}
-                    onChange={(event) =>
-                      onUpdateRow(row.id, "name", event.target.value)
-                    }
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: C.text,
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      width: "100%",
-                      padding: "2px 0",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={row.name}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <input
+                      value={row.name}
+                      onChange={(event) =>
+                        onUpdateRow(row.id, "name", event.target.value)
+                      }
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: C.text,
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        width: "100%",
+                        padding: "2px 0",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={row.name}
+                    />
+                    <button
+                      onClick={() => onUpdateRow(row.id, "isRecurring", !row.isRecurring)}
+                      style={{
+                        background: row.isRecurring ? C.blueLight : "transparent",
+                        border: `1px solid ${row.isRecurring ? C.blue : C.borderHover}`,
+                        color: row.isRecurring ? C.blue : C.textLight,
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "2px",
+                      }}
+                      title="Toggle Recurring"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 2v6h-6"></path>
+                        <path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path>
+                      </svg>
+                      {row.isRecurring ? "Recurring" : ""}
+                    </button>
+                  </div>
                   <div
                     style={{
                       fontSize: "11px",

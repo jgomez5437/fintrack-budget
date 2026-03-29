@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Routes, Route, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { C, defaultData } from "./app/constants";
 import {
   buildBudgetSummary,
@@ -9,6 +9,7 @@ import {
 import { formatCurrency, todayLabel } from "./app/utils/formatters";
 import { parseImportFile } from "./app/services/importTransactions";
 import { autoAssignImportCategory } from "./app/utils/importCategoryRules";
+import { detectRecurringTransactions, extractDayOfMonth } from "./app/services/aiRecurring";
 import {
   CATEGORY_ALERT_COUNT_KEY,
   FIRST_NAME_KEY,
@@ -1211,7 +1212,20 @@ export default function BudgetApp() {
     setImportError("");
     try {
       const parsedRows = await parseImportFile(file);
-      setImportRows(autoAssignImportCategory(parsedRows, data.categories));
+      const categorizedRows = autoAssignImportCategory(parsedRows, data.categories);
+      setImportRows(categorizedRows);
+
+      // Detect recurring
+      detectRecurringTransactions(categorizedRows).then((recurringIds) => {
+        if (recurringIds.length > 0) {
+          const idSet = new Set(recurringIds.map(String));
+          setImportRows((currentRows) => 
+            currentRows.map((row) => 
+              idSet.has(String(row.id)) ? { ...row, isRecurring: true } : row
+            )
+          );
+        }
+      });
     } catch (error) {
       setImportError(error.message);
     }
@@ -1260,23 +1274,47 @@ export default function BudgetApp() {
   };
 
   const confirmImport = () => {
-    const transactionsToAdd = importRows
-      .filter((row) => row.include && row.name.trim() && row.amount)
-      .map((row) => ({
-        id: Date.now() + Math.random(),
-        name: row.name.trim(),
-        amount: row.amount,
-        categoryId: row.categoryId ? parseInt(row.categoryId, 10) : null,
-        date: row.date,
-        importSource: "excel",
-        importDateValue: row.importDateValue,
-      }));
+    const transactionsToAdd = [];
+    const recurringToAdd = [];
 
-    update({ ...data, transactions: [...transactionsToAdd, ...transactions] });
+    importRows.forEach((row) => {
+      if (row.include && row.name.trim() && row.amount) {
+        transactionsToAdd.push({
+          id: Date.now() + Math.random(),
+          name: row.name.trim(),
+          amount: row.amount,
+          categoryId: row.categoryId ? parseInt(row.categoryId, 10) : null,
+          date: row.date,
+          importSource: "excel",
+          importDateValue: row.importDateValue,
+        });
+
+        if (row.isRecurring) {
+          recurringToAdd.push({
+            id: Date.now() + Math.random(),
+            name: row.name.trim(),
+            amount: parseFloat(row.amount),
+            dayOfMonth: extractDayOfMonth(row.date) || 1,
+          });
+        }
+      }
+    });
+
+    const newRecurring = [...(data.recurring || [])];
+    recurringToAdd.forEach((r) => {
+      if (!newRecurring.some((existing) => existing.name.toLowerCase() === r.name.toLowerCase())) {
+        newRecurring.push(r);
+      }
+    });
+
+    update({ 
+      ...data, 
+      transactions: [...transactionsToAdd, ...transactions],
+      recurring: newRecurring 
+    });
     setImportRows(null);
   };
 
-  const navigate = useNavigate();
   const location = useLocation();
 
   // Scroll to top on route change

@@ -20,6 +20,7 @@ export const defaultData = () => ({
   categories: [],
   transactions: [],
   bills: [],
+  recurring: [],
 });
 
 export const C = {
