@@ -67,7 +67,9 @@ export default function RecurringTab({
                         color: C.textMid,
                         marginTop: "4px",
                         fontWeight: 500,
-                        lineHeight: 1.4,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       Renews on the {item.dayOfMonth}{["st", "nd", "rd"][((item.dayOfMonth + 90) % 100 - 10) % 10 - 1] || "th"}
