@@ -946,15 +946,15 @@ export default function BudgetApp() {
 
   const updateTransactionCategory = (transactionId, categoryId, splitData = null) => {
     const isSplit = !!(splitData && splitData.isSplit);
+    const targetTransaction = transactions.find(t => t.id === transactionId);
+    const catId = isSplit ? null : (categoryId ? parseInt(categoryId, 10) : null);
+    
     update({
       ...data,
       transactions: transactions.map((transaction) =>
         transaction.id === transactionId
           ? (() => {
-              const catId = isSplit ? null : (categoryId ? parseInt(categoryId, 10) : null);
               let amount = parseFloat(transaction.amount) || 0;
-              
-              // If we just assigned an income category and the amount is positive (e.g. from a manual entry we just made or an imported spender), negate it
               if (catId && data.incomeCategories.some(ic => ic.id === catId) && amount > 0) {
                 amount = amount * -1;
               }
@@ -969,6 +969,11 @@ export default function BudgetApp() {
             })()
           : transaction,
       ),
+      recurring: (data.recurring || []).map(r => 
+        (targetTransaction && r.name.toLowerCase() === targetTransaction.name.toLowerCase())
+          ? { ...r, categoryId: catId }
+          : r
+      )
     });
 
     if (isSplit) {
@@ -1016,6 +1021,13 @@ export default function BudgetApp() {
             }
           : transaction,
       ),
+      recurring: (data.recurring || []).map(r => {
+        const assignedTx = uncategorizedTransactions.find(t => t.name.toLowerCase() === r.name.toLowerCase());
+        if (assignedTx && assignmentsByTransactionId.has(assignedTx.id)) {
+          return { ...r, categoryId: assignmentsByTransactionId.get(assignedTx.id) };
+        }
+        return r;
+      })
     });
 
     rememberCategory(assignments[assignments.length - 1].categoryId);
@@ -1059,6 +1071,15 @@ export default function BudgetApp() {
             }
           : transaction,
       ),
+      recurring: (data.recurring || []).map(r => {
+        const selectedTx = transactions.find(
+          t => selectedTransactionIds.includes(t.id) && t.name.toLowerCase() === r.name.toLowerCase()
+        );
+        if (selectedTx) {
+          return { ...r, categoryId: categoryId ? parseInt(categoryId, 10) : null };
+        }
+        return r;
+      })
     });
 
     setSelectedTransactionIds([]);
@@ -1295,6 +1316,7 @@ export default function BudgetApp() {
             name: row.name.trim(),
             amount: parseFloat(row.amount),
             dayOfMonth: extractDayOfMonth(row.date) || 1,
+            categoryId: row.categoryId ? parseInt(row.categoryId, 10) : null,
           });
         }
       }
@@ -1332,6 +1354,7 @@ export default function BudgetApp() {
           name: transaction.name,
           amount: parseFloat(Math.abs(transaction.amount)),
           dayOfMonth: extractDayOfMonth(transaction.date) || 1,
+          categoryId: transaction.categoryId ? parseInt(transaction.categoryId, 10) : null,
         },
       ];
       update({ ...data, recurring: newRecurring });
