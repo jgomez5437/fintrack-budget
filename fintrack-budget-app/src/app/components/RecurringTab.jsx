@@ -182,13 +182,12 @@ export default function RecurringTab({
             </button>
             <div
               ref={scrollRef}
-              className="hide-scrollbar"
+              className="hide-scrollbar carousel-scroll-container"
               style={{
                 display: "flex",
                 gap: "12px",
                 overflowX: "auto",
                 paddingBottom: "8px",
-                padding: "0 20px 8px 20px",
               }}
             >
               {groupedByDay.map(({ day, items, totalAmount }) => (
@@ -409,6 +408,14 @@ export default function RecurringTab({
       <style>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
+        }
+        .carousel-scroll-container {
+          padding: 0 20px 8px 20px;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .carousel-scroll-container {
+            padding: 0 44px 8px 44px;
+          }
         }
         .slide-up {
           animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
