@@ -81,6 +81,7 @@ function cloneBudgetSetup(sourceData) {
     })),
     transactions: [],
     bills: sourceData.bills || [],
+    recurring: sourceData.recurring || [],
   };
 }
 
@@ -295,12 +296,20 @@ export default function BudgetApp() {
 
       try {
         const result = await storage.get(`budget-${month}-${year}`);
-        if (result) {
-          setData({ ...defaultData(), ...JSON.parse(result.value) });
-          setBudgetLoaded(true);
-          return;
+        let loadedData = result ? { ...defaultData(), ...JSON.parse(result.value) } : defaultData();
+
+        try {
+          const globalRecurringResult = await storage.get(`budget-global-recurring`);
+          if (globalRecurringResult) {
+            loadedData.recurring = JSON.parse(globalRecurringResult.value);
+          } else if (loadedData.recurring && loadedData.recurring.length > 0) {
+            storage.set(`budget-global-recurring`, JSON.stringify(loadedData.recurring)).catch(() => {});
+          }
+        } catch (e) {
+          console.error("Failed to load global recurring", e);
         }
-        setData(defaultData());
+
+        setData(loadedData);
       } catch {
         setData(defaultData());
       } finally {
@@ -546,6 +555,9 @@ export default function BudgetApp() {
     async (nextData) => {
       try {
         await storage.set(`budget-${month}-${year}`, JSON.stringify(nextData));
+        if (nextData.recurring) {
+          await storage.set(`budget-global-recurring`, JSON.stringify(nextData.recurring));
+        }
       } catch {
         // Ignore persistence failures to keep the UI responsive.
       }

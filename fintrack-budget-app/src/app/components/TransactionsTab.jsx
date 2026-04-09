@@ -729,56 +729,56 @@ export default function TransactionsTab({
         </div>
       )}
 
-      {mostRecentImportedTransactionLabel && (
-        <div
-          style={{
-            marginBottom: "16px",
-            padding: "10px 14px",
-            background: C.surface,
-            border: `1.5px solid ${C.border}`,
-            borderRadius: "10px",
-            boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "8px",
-          }}
-        >
+      <div
+        style={{
+          marginBottom: "16px",
+          padding: "10px 14px",
+          background: C.surface,
+          border: `1.5px solid ${C.border}`,
+          borderRadius: "10px",
+          boxShadow: "0 2px 8px rgba(30,80,212,0.06)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: mostRecentImportedTransactionLabel ? "space-between" : "flex-end",
+          gap: "8px",
+        }}
+      >
+        {mostRecentImportedTransactionLabel && (
           <span style={{ fontSize: "13px", color: C.textMid, fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             Most Recent: {mostRecentImportedTransactionLabel}
           </span>
-          <button
-            className="import-btn"
-            onClick={onOpenImportPicker}
-            onDragOver={onImportDragOver}
-            onDragLeave={onImportDragLeave}
-            onDrop={onImportDrop}
-            style={{
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              background: isImportDragActive ? C.blue : C.blueLight,
-              border: `1.5px solid ${C.blueMid}`,
-              color: isImportDragActive ? C.white : C.blue,
-              padding: "7px 12px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontWeight: 700,
-              transition: "all 0.15s",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            {isImportDragActive ? "Drop here" : "Import Excel"}
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          className="import-btn"
+          onClick={onOpenImportPicker}
+          onDragOver={onImportDragOver}
+          onDragLeave={onImportDragLeave}
+          onDrop={onImportDrop}
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            background: isImportDragActive ? C.blue : C.blueLight,
+            border: `1.5px solid ${C.blueMid}`,
+            color: isImportDragActive ? C.white : C.blue,
+            padding: "7px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: 700,
+            transition: "all 0.15s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          {isImportDragActive ? "Drop here" : "Import Excel"}
+        </button>
+      </div>
 
       {selectedCount > 0 && showFloatingBulk && typeof document !== "undefined" && createPortal(
         <div
