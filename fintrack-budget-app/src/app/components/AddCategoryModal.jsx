@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { C } from "../constants";
 
 export default function AddCategoryModal({
@@ -6,8 +7,17 @@ export default function AddCategoryModal({
   onCancel,
   onConfirm,
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
     <div
+      onClick={onCancel}
       style={{
         position: "fixed",
         inset: 0,
@@ -19,6 +29,7 @@ export default function AddCategoryModal({
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "480px",
@@ -90,6 +101,7 @@ export default function AddCategoryModal({
               onChange={(event) =>
                 onCategoryChange({ ...newCat, amount: event.target.value })
               }
+              onFocus={(e) => e.target.select()}
               onKeyDown={(event) => event.key === "Enter" && onConfirm()}
               style={{
                 background: "transparent",

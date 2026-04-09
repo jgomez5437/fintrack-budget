@@ -109,6 +109,20 @@ export default function TransactionsTab({
     if (onClearSelections) onClearSelections();
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        if (showTxForm) {
+          if (onCloseTxForm) onCloseTxForm();
+        } else if (isSelectionMode) {
+          cancelSelectionMode();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showTxForm, isSelectionMode, onCloseTxForm]);
+
   const handleTransactionClick = (transaction) => {
     if (hasLongPressedRef.current) {
       hasLongPressedRef.current = false;
@@ -477,6 +491,7 @@ export default function TransactionsTab({
                 onChange={(event) =>
                   onNewTransactionChange({ ...newTx, amount: event.target.value })
                 }
+                onFocus={(e) => e.target.select()}
                 onKeyDown={(event) => event.key === "Enter" && onAddTransaction()}
                 style={{
                   background: "transparent",
@@ -570,6 +585,7 @@ export default function TransactionsTab({
                       setManualSplit1(prev => ({ ...prev, amount: val }));
                       setManualSplit2(prev => ({ ...prev, amount: (total - amt1).toFixed(2) }));
                     }}
+                    onFocus={(e) => e.target.select()}
                     style={inputStyle}
                   />
                 </div>
@@ -593,6 +609,7 @@ export default function TransactionsTab({
                       setManualSplit2(prev => ({ ...prev, amount: val }));
                       setManualSplit1(prev => ({ ...prev, amount: (total - amt2).toFixed(2) }));
                     }}
+                    onFocus={(e) => e.target.select()}
                     style={inputStyle}
                   />
                 </div>

@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useEffect } from "react";
 import { C } from "../constants";
 import { inputStyle } from "../styles";
 
@@ -9,6 +10,14 @@ export default function CategoryEditModal({
   onCancel,
   isIncome = false,
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   const modal = (
     <div
       onClick={onCancel}
@@ -76,6 +85,8 @@ export default function CategoryEditModal({
               onChange={(event) =>
                 onEditValueChange({ ...editVal, amount: event.target.value })
               }
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(event) => event.key === "Enter" && onSave()}
               placeholder="0.00"
               style={{
                 background: "transparent",

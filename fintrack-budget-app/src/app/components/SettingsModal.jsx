@@ -15,6 +15,14 @@ export default function SettingsModal({ onClose, session, onSignOut, isSigningOu
     fetchLinkStatus();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const fetchLinkStatus = async () => {
     if (!supabase || !session?.user?.id) return;
     setLoading(true);
@@ -183,6 +191,7 @@ export default function SettingsModal({ onClose, session, onSignOut, isSigningOu
           flexDirection: "column",
           maxHeight: "90vh",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{

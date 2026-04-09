@@ -720,10 +720,10 @@ export default function BudgetTab({
                           onChange={(event) =>
                             onInlineNameChange(event.target.value)
                           }
-                          onKeyDown={(event) =>
-                            event.key === "Enter" &&
-                            onSubmitInline(category.id)
-                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") onSubmitInline(category.id);
+                            if (event.key === "Escape") onCloseInline();
+                          }}
                           style={inputStyle}
                         />
                         {inlineAutocomplete.length > 0 && (
@@ -786,10 +786,11 @@ export default function BudgetTab({
                             onChange={(event) =>
                               onInlineAmountChange(event.target.value)
                             }
-                            onKeyDown={(event) =>
-                              event.key === "Enter" &&
-                              onSubmitInline(category.id)
-                            }
+                            onFocus={(e) => e.target.select()}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") onSubmitInline(category.id);
+                              if (event.key === "Escape") onCloseInline();
+                            }}
                             style={{
                               background: "transparent",
                               border: "none",

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { C } from "../constants";
 
 export default function ImportReviewModal({
@@ -9,6 +10,14 @@ export default function ImportReviewModal({
   onDeleteRow,
 }) {
   const included = importRows.filter((row) => row.include);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
 
   return (
     <div

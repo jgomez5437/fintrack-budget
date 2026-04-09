@@ -99,6 +99,9 @@ export default function GlobalStyles() {
       .import-btn:hover { background: ${C.blueLight} !important; border-color: ${C.blue} !important; color: ${C.textMid} !important; }
       .import-row:hover { background: ${C.blueLight} !important; }
       
+      button { transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important; }
+      button:active { transform: scale(0.96); }
+      
       .import-table-container { overflow-x: auto; }
       .import-review-grid { grid-template-columns: 32px minmax(0, 2fr) minmax(96px, auto) minmax(0, 1.5fr) 32px; }
       .import-amount-cell { justify-self: end; text-align: right; }

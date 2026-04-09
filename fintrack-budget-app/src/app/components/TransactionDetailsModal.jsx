@@ -36,6 +36,14 @@ export default function TransactionDetailsModal({
     }
   }, [isSplit, totalAmount, categoryId, split1.amount, split2.amount]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleSplit1AmountChange = (val) => {
     const amount1 = parseFloat(val) || 0;
     setSplit1((prev) => ({ ...prev, amount: val }));
@@ -247,6 +255,7 @@ export default function TransactionDetailsModal({
                     step="0.01"
                     value={split1.amount}
                     onChange={(e) => handleSplit1AmountChange(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     style={{
                       background: C.surface,
                       border: `1.5px solid ${C.border}`,
@@ -280,6 +289,7 @@ export default function TransactionDetailsModal({
                     step="0.01"
                     value={split2.amount}
                     onChange={(e) => handleSplit2AmountChange(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     style={{
                       background: C.surface,
                       border: `1.5px solid ${C.border}`,

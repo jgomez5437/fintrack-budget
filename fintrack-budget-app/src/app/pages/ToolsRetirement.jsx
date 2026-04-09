@@ -1,11 +1,22 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants";
 
 function ConfirmBackModal({ open, onConfirm, onCancel }) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onCancel]);
+
   if (!open) return null;
   return (
-    <div style={{
+    <div 
+      onClick={onCancel}
+      style={{
       position: "fixed",
       inset: 0,
       background: "rgba(15,28,77,0.36)",
@@ -14,7 +25,9 @@ function ConfirmBackModal({ open, onConfirm, onCancel }) {
       zIndex: 2000,
       padding: "16px",
     }}>
-      <div style={{
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{
         background: C.surface,
         border: `1.5px solid ${C.border}`,
         borderRadius: "18px",
@@ -241,7 +254,7 @@ function LabelInput({ label, value, onChange, step = "1" }) {
           if (!/^\d*\.?\d*$/.test(v)) return;
           onChange(v.replace(/^0+(\d)/, "$1"));
         }}
-        onFocus={(e) => value === "0" && e.target.select()}
+        onFocus={(e) => e.target.select()}
         style={{
           padding: "10px",
           borderRadius: "10px",

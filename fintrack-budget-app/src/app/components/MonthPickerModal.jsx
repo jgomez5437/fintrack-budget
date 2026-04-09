@@ -15,6 +15,14 @@ export default function MonthPickerModal({ currentMonth, currentYear, onSelectMo
     loadKeys();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   const handleConfirm = () => {
     if (isSelectionDisabled) return;
     onSelectMonth(selectedMonth, selectedYear);

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { C } from "../constants";
 
 export default function DeleteConfirmModal({
@@ -7,8 +8,17 @@ export default function DeleteConfirmModal({
   onCancel,
   onConfirm,
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
     <div
+      onClick={onCancel}
       style={{
         position: "fixed",
         inset: 0,
@@ -20,6 +30,7 @@ export default function DeleteConfirmModal({
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "480px",

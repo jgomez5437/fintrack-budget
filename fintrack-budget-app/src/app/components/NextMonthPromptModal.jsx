@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { C, MONTHS } from "../constants";
 
 export default function NextMonthPromptModal({
@@ -8,8 +9,17 @@ export default function NextMonthPromptModal({
   onCreateBlank,
   onCancel,
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isCreating) onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel, isCreating]);
+
   return (
     <div
+      onClick={!isCreating ? onCancel : undefined}
       style={{
         position: "fixed",
         inset: 0,
@@ -21,6 +31,7 @@ export default function NextMonthPromptModal({
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "520px",
