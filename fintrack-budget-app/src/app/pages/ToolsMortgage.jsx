@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants";
 
@@ -82,6 +82,35 @@ export default function ToolsMortgage() {
   const [insurance, setInsurance] = useState("");
   const [hoa, setHoa] = useState("");
 
+  const [nationalRate, setNationalRate] = useState(null);
+  const [loadingRate, setLoadingRate] = useState(true);
+
+  useEffect(() => {
+    const fetchNationalRate = async () => {
+      try {
+        const response = await fetch("https://api.rateapi.dev/v1/benchmarks", {
+          headers: {
+            "X-API-Key": "rk_9f2cdd827f107ee4a2d0bd4a90c6d70354b59178304bfba88067a63a5a644ca2"
+          }
+        });
+        const data = await response.json();
+        const mort30 = data.benchmarks?.find(b => b.product_type === "mortgage_30yr");
+        if (mort30) {
+          const calculatedAvg = mort30.median_apr || ((mort30.min_rate + mort30.max_rate) / 2);
+          setNationalRate(calculatedAvg.toFixed(2));
+        } else {
+          setNationalRate("6.44");
+        }
+      } catch (err) {
+        console.error("Failed to fetch national average rate", err);
+        setNationalRate("6.44");
+      } finally {
+        setLoadingRate(false);
+      }
+    };
+    fetchNationalRate();
+  }, []);
+
   const num = (val) => {
     const n = parseFloat(val);
     return Number.isFinite(n) ? Math.max(0, n) : 0;
@@ -148,6 +177,57 @@ export default function ToolsMortgage() {
           ← Back to Tools
         </button>
         <div style={{ fontSize: "22px", fontWeight: 800, color: C.text }}>Mortgage Calculator</div>
+      </div>
+
+      <div style={{
+        background: `linear-gradient(135deg, ${C.surfaceAlt}, ${C.surface})`,
+        borderRadius: "16px",
+        padding: "16px",
+        display: "flex",
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        border: `1.5px solid ${C.border}`,
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 800, color: C.text }}>
+            Current National Average (30-Year)
+          </div>
+          <div style={{ fontSize: "12px", color: C.textMid, fontWeight: 700 }}>
+            Powered by RateAPI
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {loadingRate ? (
+            <div style={{ fontSize: "16px", fontWeight: 800, color: C.textMid }}>Loading...</div>
+          ) : (
+            <div style={{ fontSize: "18px", fontWeight: 900, color: C.green }}>
+              {nationalRate}%
+            </div>
+          )}
+          <button
+            onClick={() => setRate(nationalRate)}
+            disabled={loadingRate}
+            style={{
+              padding: "10px 14px",
+              background: C.blue,
+              color: C.white,
+              border: "none",
+              borderRadius: "12px",
+              fontWeight: 800,
+              cursor: loadingRate ? "default" : "pointer",
+              opacity: loadingRate ? 0.6 : 1,
+              transition: "transform 0.1s",
+            }}
+            onMouseDown={(e) => !loadingRate && (e.currentTarget.style.transform = "scale(0.96)")}
+            onMouseUp={(e) => !loadingRate && (e.currentTarget.style.transform = "scale(1)")}
+            onMouseLeave={(e) => !loadingRate && (e.currentTarget.style.transform = "scale(1)")}
+          >
+            Use this rate
+          </button>
+        </div>
       </div>
 
       <div style={{
