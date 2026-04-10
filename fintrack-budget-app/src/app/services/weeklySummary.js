@@ -223,3 +223,76 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
 
   return data;
 }
+
+/**
+ * Handles multi-turn chat for a weekly summary.
+ * `messages` should be an array of `{ role: "user" | "model", content: string }`.
+ */
+export async function askFollowUpQuestion({ summary, transactions = [], categories = [], messages }) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY not set in environment.");
+  }
+
+  // Filter transactions exactly to the week window
+  const start = new Date(summary.week_start + "T00:00:00").getTime();
+  const end = new Date(summary.week_end + "T23:59:59").getTime();
+  const weekTxs = transactions.filter((t) => {
+    const d = new Date(t.date).getTime();
+    return d >= start && d <= end;
+  });
+
+  const txLines = weekTxs.map(t => {
+    const cat = categories.find(c => c.id === parseInt(t.categoryId, 10))?.name || "Uncategorized";
+    const amt = parseFloat(t.amount);
+    return `- ${t.date} | ${cat} | ${t.name} : $${amt.toFixed(2)}`;
+  }).join("\n");
+
+  const systemContext = `You are a helpful financial assistant answering follow-up questions about the user's weekly summary.
+Keep your answers very concise, direct, formatting friendly (use bullet points), and helpful.
+
+Context: 
+Summary generated on ${summary.generated_on} for the week of ${summary.week_start} to ${summary.week_end}.
+Weekly Summary Text:
+"${summary.summary_text}"
+
+Transactions for this week:
+${txLines}
+`;
+
+  const geminiMessages = messages.map(msg => ({
+    role: msg.role,
+    parts: [{ text: msg.content }]
+  }));
+
+  try {
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: systemContext }]
+        },
+        contents: geminiMessages,
+        generationConfig: {
+          temperature: 0.7,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[askFollowUpQuestion] API Error Details:", errText);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const json = await response.json();
+    const reply = json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!reply) throw new Error("Empty response from Gemini");
+
+    return reply;
+  } catch (err) {
+    console.error("[askFollowUpQuestion] Fetch failed:", err);
+    throw err;
+  }
+}
+

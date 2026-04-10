@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { C } from "../constants";
-import { getAllSummaries } from "../services/weeklySummary";
+import { getAllSummaries, askFollowUpQuestion } from "../services/weeklySummary";
 
 function SparkleIcon() {
   return (
@@ -34,10 +34,45 @@ function formatWeekLabel(row) {
   return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}, ${end.getFullYear()}`;
 }
 
-export default function WeeklySummaryModal({ userId, isGenerating, onClose }) {
+export default function WeeklySummaryModal({ userId, transactions = [], categories = [], isGenerating, onClose }) {
   const [summaries, setSummaries] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Chat UI states
+  const [isChatView, setIsChatView] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, isChatting, isChatView]);
+
+  const handleSendQuestion = async () => {
+    if (!chatInput.trim() || isChatting || !current) return;
+    const text = chatInput.trim();
+    setChatInput("");
+    setChatMessages((prev) => [...prev, { role: "user", content: text }]);
+    setIsChatting(true);
+
+    try {
+      const reply = await askFollowUpQuestion({
+        summary: current,
+        transactions,
+        categories,
+        messages: [...chatMessages, { role: "user", content: text }],
+      });
+      setChatMessages((prev) => [...prev, { role: "model", content: reply }]);
+    } catch {
+      setChatMessages((prev) => [...prev, { role: "model", content: "Sorry, I couldn't process that right now. Please try again." }]);
+    } finally {
+      setIsChatting(false);
+    }
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -132,6 +167,109 @@ export default function WeeklySummaryModal({ userId, isGenerating, onClose }) {
           <div style={{ textAlign: "center", padding: "40px 0", color: C.textLight, fontSize: "14px" }}>
             No summaries yet — check back this Sunday!
           </div>
+        ) : isChatView ? (
+          <div style={{ display: "flex", flexDirection: "column", height: "400px" }}>
+            {/* Chat header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: C.text }}>
+                Discussion: {formatWeekLabel(current)}
+              </div>
+              <button
+                onClick={() => setIsChatView(false)}
+                style={{
+                  background: C.surfaceAlt,
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: "8px",
+                  padding: "4px 8px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: C.textMid,
+                  cursor: "pointer",
+                }}
+              >
+                Back to Summary
+              </button>
+            </div>
+
+            {/* Messages area */}
+            <div style={{
+              flex: 1,
+              overflowY: "auto",
+              background: C.surfaceAlt,
+              border: `1.5px solid ${C.border}`,
+              borderRadius: "12px",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}>
+              <div style={{ alignSelf: "flex-start", background: C.surface, border: `1.5px solid ${C.border}`, padding: "10px 14px", borderRadius: "12px", color: C.textMid, fontSize: "13px", lineHeight: "1.5" }}>
+                I'm ready! Ask me anything about your spending between {formatWeekLabel(current)}.
+              </div>
+              {chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  style={{
+                    alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                    background: msg.role === "user" ? C.blue : C.surface,
+                    color: msg.role === "user" ? C.white : C.textMid,
+                    border: msg.role === "user" ? "none" : `1.5px solid ${C.border}`,
+                    padding: "10px 14px",
+                    borderRadius: "12px",
+                    fontSize: "13px",
+                    lineHeight: "1.5",
+                    maxWidth: "85%",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {msg.content}
+                </div>
+              ))}
+              {isChatting && (
+                <div style={{ alignSelf: "flex-start", background: C.surface, border: `1.5px solid ${C.border}`, padding: "10px 14px", borderRadius: "12px", color: C.textLight, fontSize: "13px" }}>
+                   Thinking...
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input area */}
+            <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendQuestion()}
+                disabled={isChatting}
+                placeholder="Ask a question..."
+                style={{
+                  flex: 1,
+                  background: C.surface,
+                  border: `1.5px solid ${C.border}`,
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  fontSize: "14px",
+                  color: C.text,
+                }}
+              />
+              <button
+                onClick={handleSendQuestion}
+                disabled={isChatting || !chatInput.trim()}
+                style={{
+                  background: C.blue,
+                  border: "none",
+                  padding: "0 18px",
+                  borderRadius: "10px",
+                  color: C.white,
+                  fontWeight: 700,
+                  cursor: isChatting || !chatInput.trim() ? "default" : "pointer",
+                  opacity: isChatting || !chatInput.trim() ? 0.6 : 1,
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             {/* Week navigation */}
@@ -208,6 +346,36 @@ export default function WeeklySummaryModal({ userId, isGenerating, onClose }) {
                 {currentIndex + 1} of {summaries.length} summaries
               </div>
             )}
+
+            <button
+              onClick={() => {
+                setChatMessages([]);
+                setChatInput("");
+                setIsChatView(true);
+              }}
+              style={{
+                width: "100%",
+                marginTop: "16px",
+                background: C.surface,
+                border: `1.5px solid ${C.border}`,
+                color: C.blue,
+                padding: "12px",
+                borderRadius: "12px",
+                fontSize: "14px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "all 0.15s",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Ask a question
+            </button>
           </>
         )}
       </div>

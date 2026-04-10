@@ -1646,6 +1646,8 @@ export default function BudgetApp() {
       {showWeeklySummary && (
         <WeeklySummaryModal
           userId={session?.user?.id}
+          transactions={transactions}
+          categories={data.categories || []}
           isGenerating={isGeneratingSummary}
           onClose={() => setShowWeeklySummary(false)}
         />
