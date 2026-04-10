@@ -90,7 +90,7 @@ export default function ToolsMortgage() {
       try {
         const response = await fetch("https://api.rateapi.dev/v1/benchmarks", {
           headers: {
-            "X-API-Key": "rk_9f2cdd827f107ee4a2d0bd4a90c6d70354b59178304bfba88067a63a5a644ca2"
+            "X-API-Key": import.meta.env.VITE_RATE_API_KEY || ""
           }
         });
         const data = await response.json();
