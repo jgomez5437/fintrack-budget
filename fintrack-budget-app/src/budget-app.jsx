@@ -1452,6 +1452,7 @@ export default function BudgetApp() {
         <GlobalStyles />
         <ImportReviewModal
           categories={data.categories}
+          incomeCategories={incomeCategories}
           importRows={importRows}
           onCancel={() => setImportRows(null)}
           onConfirm={confirmImport}

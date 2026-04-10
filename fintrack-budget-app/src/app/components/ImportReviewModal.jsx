@@ -3,6 +3,7 @@ import { C } from "../constants";
 
 export default function ImportReviewModal({
   categories,
+  incomeCategories = [],
   importRows,
   onCancel,
   onConfirm,
@@ -241,11 +242,11 @@ export default function ImportReviewModal({
                   style={{
                     fontSize: "14px",
                     fontWeight: 700,
-                    color: C.red,
+                    color: parseFloat(row.amount) < 0 ? C.green : C.red,
                     whiteSpace: "nowrap",
                   }}
                 >
-                  -${row.amount}
+                  {parseFloat(row.amount) < 0 ? "+" : "-"}${Math.abs(parseFloat(row.amount)).toFixed(2)}
                 </div>
 
                 <select
@@ -266,11 +267,20 @@ export default function ImportReviewModal({
                   }}
                 >
                   <option value="">No category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
+                  <optgroup label="Income Sources">
+                    {incomeCategories.map((ic) => (
+                      <option key={ic.id} value={ic.id}>
+                        {ic.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Budget Categories">
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
 
                 <button

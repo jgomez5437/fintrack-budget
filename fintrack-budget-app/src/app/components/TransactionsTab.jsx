@@ -572,7 +572,12 @@ export default function TransactionsTab({
                     style={selectStyle}
                   >
                     <option value="">Category 1</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <optgroup label="Income Sources">
+                      {incomeCategories.map(ic => <option key={ic.id} value={ic.id}>{ic.name}</option>)}
+                    </optgroup>
+                    <optgroup label="Budget Categories">
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </optgroup>
                   </select>
                   <input
                     type="number"
@@ -596,7 +601,12 @@ export default function TransactionsTab({
                     style={selectStyle}
                   >
                     <option value="">Category 2</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <optgroup label="Income Sources">
+                      {incomeCategories.map(ic => <option key={ic.id} value={ic.id}>{ic.name}</option>)}
+                    </optgroup>
+                    <optgroup label="Budget Categories">
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </optgroup>
                   </select>
                   <input
                     type="number"
@@ -1021,11 +1031,18 @@ export default function TransactionsTab({
                 >
                   <option value="__none__">Choose category</option>
                   <option value="">Uncategorized</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
+                  <optgroup label="Income Sources">
+                    {incomeCategories.map((ic) => (
+                      <option key={ic.id} value={ic.id}>{ic.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Budget Categories">
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
 
                 <div className="tx-bulk-buttons" style={{ display: "flex", gap: "8px" }}>
@@ -1099,9 +1116,16 @@ export default function TransactionsTab({
               >
                 <option value="">All Categories</option>
                 <option value="__uncategorized__">Uncategorized</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                <optgroup label="Income Sources">
+                  {incomeCategories.map((ic) => (
+                    <option key={ic.id} value={ic.id}>{ic.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Budget Categories">
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
               </select>
               {filterCategoryId && (
                 <button
