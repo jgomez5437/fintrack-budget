@@ -185,6 +185,7 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
         model: OLLAMA_MODEL,
         prompt: prompt,
         stream: false,
+        keep_alive: "10m",
         options: {
           temperature: 0.7,
           num_predict: 3048,
@@ -236,15 +237,7 @@ export async function askFollowUpQuestion({ summary, transactions = [], categori
     throw new Error("VITE_OLLAMA_URL not set in environment.");
   }
 
-  // Filter transactions exactly to the week window
-  const start = new Date(summary.week_start + "T00:00:00").getTime();
-  const end = new Date(summary.week_end + "T23:59:59").getTime();
-  const weekTxs = transactions.filter((t) => {
-    const d = new Date(t.date).getTime();
-    return d >= start && d <= end;
-  });
-
-  const txLines = weekTxs.map(t => {
+  const txLines = transactions.map(t => {
     const cat = categories.find(c => c.id === parseInt(t.categoryId, 10))?.name || "Uncategorized";
     const amt = parseFloat(t.amount);
     return `- ${t.date} | ${cat} | ${t.name} : $${amt.toFixed(2)}`;
@@ -269,7 +262,7 @@ Weekly Summary Text:
 Monthly Category Overview (Budget vs Spent):
 ${categoryContext}
 
-Transactions for this week:
+Monthly Transactions Reference:
 ${txLines}
 `;
 
@@ -291,6 +284,7 @@ ${txLines}
         model: OLLAMA_MODEL,
         messages: ollamaMessages,
         stream: false,
+        keep_alive: "10m",
         options: {
           temperature: 0.7,
         },
