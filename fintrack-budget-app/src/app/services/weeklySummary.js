@@ -247,6 +247,14 @@ export async function askFollowUpQuestion({ summary, transactions = [], categori
     return `- ${t.date} | ${cat} | ${t.name} : $${amt.toFixed(2)}`;
   }).join("\n");
 
+  const categoryContext = categories.map(c => {
+    const budget = parseFloat(c.amount) || 0;
+    const catTxs = transactions.filter(t => String(t.categoryId) === String(c.id));
+    const spentThisMonth = catTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+    const leftThisMonth = budget - spentThisMonth;
+    return `- ${c.name}: Budget $${budget.toFixed(2)} | Spent this month $${spentThisMonth.toFixed(2)} | Remaining $${leftThisMonth.toFixed(2)}`;
+  }).join("\n");
+
   const systemContext = `You are a helpful financial assistant answering follow-up questions about the user's weekly summary.
 Keep your answers very concise, direct, formatting friendly (use bullet points), and helpful.
 
@@ -254,6 +262,9 @@ Context:
 Summary generated on ${summary.generated_on} for the week of ${summary.week_start} to ${summary.week_end}.
 Weekly Summary Text:
 "${summary.summary_text}"
+
+Monthly Category Overview (Budget vs Spent):
+${categoryContext}
 
 Transactions for this week:
 ${txLines}
