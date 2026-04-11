@@ -1,8 +1,7 @@
 import { getSupabase } from "./supabase";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-2.5-flash";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const OLLAMA_URL = (import.meta.env.VITE_OLLAMA_URL || "").replace(/\/+$/, "");
+const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || "gemma4";
 
 // ── Date Helpers ──────────────────────────────────────────────────────────────
 
@@ -162,8 +161,8 @@ ${uncatLine}${txSection}`;
  * Uses effectiveUserId for shared budgets (secondary user routes to primary).
  */
 export async function generateAndSaveSummary({ userId, spentByCategory, totalSpent, categories, transactions = [] }) {
-  if (!GEMINI_API_KEY) {
-    console.error("[weeklySummary] GEMINI_API_KEY not set in environment.");
+  if (!OLLAMA_URL) {
+    console.error("[weeklySummary] VITE_OLLAMA_URL not set in environment.");
     return null;
   }
 
@@ -177,28 +176,32 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
 
   let summaryText;
   try {
-    const response = await fetch(GEMINI_ENDPOINT, {
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
+        model: OLLAMA_MODEL,
+        prompt: prompt,
+        stream: false,
+        options: {
           temperature: 0.7,
-          maxOutputTokens: 3048,
+          num_predict: 3048,
         },
       }),
     });
 
     if (!response.ok) {
       const body = await response.text();
-      console.error("[weeklySummary] Gemini API error:", response.status, body);
+      console.error("[weeklySummary] Ollama API error:", response.status, body);
       return null;
     }
 
     const json = await response.json();
-    summaryText = json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    summaryText = json?.response?.trim();
     if (!summaryText) {
-      console.error("[weeklySummary] Empty response from Gemini");
+      console.error("[weeklySummary] Empty response from Ollama");
       return null;
     }
   } catch (err) {
@@ -229,8 +232,8 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
  * `messages` should be an array of `{ role: "user" | "model", content: string }`.
  */
 export async function askFollowUpQuestion({ summary, transactions = [], categories = [], messages }) {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY not set in environment.");
+  if (!OLLAMA_URL) {
+    throw new Error("VITE_OLLAMA_URL not set in environment.");
   }
 
   // Filter transactions exactly to the week window
@@ -270,21 +273,25 @@ Transactions for this week:
 ${txLines}
 `;
 
-  const geminiMessages = messages.map(msg => ({
-    role: msg.role,
-    parts: [{ text: msg.content }]
-  }));
+  const ollamaMessages = [
+    { role: "system", content: systemContext },
+    ...messages.map(msg => ({
+      role: msg.role === "model" ? "assistant" : msg.role,
+      content: msg.content
+    }))
+  ];
 
   try {
-    const response = await fetch(GEMINI_ENDPOINT, {
+    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemContext }]
-        },
-        contents: geminiMessages,
-        generationConfig: {
+        model: OLLAMA_MODEL,
+        messages: ollamaMessages,
+        stream: false,
+        options: {
           temperature: 0.7,
         },
       }),
@@ -293,12 +300,12 @@ ${txLines}
     if (!response.ok) {
       const errText = await response.text();
       console.error("[askFollowUpQuestion] API Error Details:", errText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`Ollama API error: ${response.status}`);
     }
 
     const json = await response.json();
-    const reply = json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!reply) throw new Error("Empty response from Gemini");
+    const reply = json?.message?.content?.trim();
+    if (!reply) throw new Error("Empty response from Ollama");
 
     return reply;
   } catch (err) {
