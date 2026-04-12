@@ -322,6 +322,7 @@ export default function BudgetApp() {
 
   useEffect(() => {
     if (authLoading || !session) return;
+
     let isMounted = true;
     async function loadFirstName() {
       try {
@@ -367,6 +368,9 @@ export default function BudgetApp() {
         totalSpent,
         categories: data.categories || [],
         transactions,
+        income: data.income,
+        currentSavings: data.currentSavings,
+        debt: data.debt || [],
       });
       if (!isMounted) return;
       setIsGeneratingSummary(false);
@@ -1569,6 +1573,8 @@ export default function BudgetApp() {
     showUncategorizedSection,
     addBill,
     deleteBill,
+    addDebt: (newDebt) => update({ ...data, debt: [...(data.debt || []), newDebt] }),
+    deleteDebt: (debtId) => update({ ...data, debt: (data.debt || []).filter((d) => d.id !== debtId) }),
     toggleRecurring,
   };
 
@@ -1599,6 +1605,9 @@ export default function BudgetApp() {
               totalSpent,
               categories: data.categories || [],
               transactions,
+              income: data.income,
+              currentSavings: data.currentSavings,
+              debt: data.debt || [],
             });
             setIsGeneratingSummary(false);
             if (result) { setWeeklySummary(result); setShowSettings(false); setShowWeeklySummary(true); }
@@ -1648,6 +1657,9 @@ export default function BudgetApp() {
           userId={session?.user?.id}
           transactions={transactions}
           categories={data.categories || []}
+          income={data.income}
+          currentSavings={data.currentSavings}
+          debt={data.debt || []}
           isGenerating={isGeneratingSummary}
           onClose={() => setShowWeeklySummary(false)}
         />

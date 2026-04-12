@@ -90,6 +90,7 @@ function normalizeBudgetRecord(record) {
     transactions: Array.isArray(record?.transactions) ? record.transactions : [],
     bills: Array.isArray(record?.bills) ? record.bills : [],
     recurring: Array.isArray(record?.recurring) ? record.recurring : [],
+    debt: Array.isArray(record?.debt) ? record.debt : [],
   };
 }
 
@@ -114,7 +115,7 @@ function createSupabaseStorage() {
         if (budgetKey) {
           const { data, error } = await supabase
             .from("monthly_budgets")
-            .select("income, income_categories, categories, transactions, bills, current_savings, recurring")
+            .select("income, income_categories, categories, transactions, bills, current_savings, recurring, debt")
             .eq("user_id", userId)
             .eq("month", budgetKey.month)
             .eq("year", budgetKey.year)
@@ -206,6 +207,7 @@ function createSupabaseStorage() {
               transactions: parsedValue.transactions,
               bills: parsedValue.bills,
               recurring: parsedValue.recurring,
+              debt: parsedValue.debt,
             },
             {
               onConflict: "user_id,year,month",

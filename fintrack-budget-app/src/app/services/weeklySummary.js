@@ -82,7 +82,7 @@ export async function getAllSummaries(userId) {
 
 // ── Gemini Prompt ─────────────────────────────────────────────────────────────
 
-function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd, transactions = []) {
+function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd, transactions = [], income, currentSavings, debt = []) {
   const categoryLines = categories
     .map((c) => {
       const spent = spentByCategory[c.id] || 0;
@@ -123,6 +123,11 @@ function buildPrompt(spentByCategory, categories, totalSpent, weekStart, weekEnd
     ? `\nIndividual transactions for key categories:\n${focusTxLines}\n`
     : "";
 
+  const incomeStr = income ? `\nMonthly Income: $${income}` : "";
+  const savingsStr = currentSavings ? `\nCurrent Savings: $${currentSavings}` : "";
+  const debtLines = (debt || []).map(d => `  - ${d.name}: $${d.amount} (Rate: ${d.rate}%, Min Pay: $${d.minPayment || d.min})`);
+  const debtStr = debtLines.length > 0 ? `\nCurrent Debt:\n${debtLines.join("\n")}` : "";
+
   return `You are a helpful financial assistant.
 
 Write a short weekly summary (3-4 sentences max).
@@ -147,7 +152,7 @@ Goal:
 Make it feel like a quick, honest check-in that sparks a real conversation.
 
 Week period: ${weekStart} through ${weekEnd}
-Total spent this period: $${totalSpent.toFixed(2)}
+Total spent this period: $${totalSpent.toFixed(2)}${incomeStr}${savingsStr}${debtStr}
 
 Spending by category:
 ${categoryLines}
@@ -160,7 +165,7 @@ ${uncatLine}${txSection}`;
  * Calls Gemini, saves to DB, returns the saved row.
  * Uses effectiveUserId for shared budgets (secondary user routes to primary).
  */
-export async function generateAndSaveSummary({ userId, spentByCategory, totalSpent, categories, transactions = [] }) {
+export async function generateAndSaveSummary({ userId, spentByCategory, totalSpent, categories, transactions = [], income, currentSavings, debt = [] }) {
   if (!OLLAMA_URL) {
     console.error("[weeklySummary] VITE_OLLAMA_URL not set in environment.");
     return null;
@@ -172,7 +177,7 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
   const now = new Date();
   const { week_start, week_end, generated_on } = getWeekWindow(now);
 
-  const prompt = buildPrompt(spentByCategory, categories, totalSpent, week_start, week_end, transactions);
+  const prompt = buildPrompt(spentByCategory, categories, totalSpent, week_start, week_end, transactions, income, currentSavings, debt);
 
   let summaryText;
   try {
@@ -232,7 +237,7 @@ export async function generateAndSaveSummary({ userId, spentByCategory, totalSpe
  * Handles multi-turn chat for a weekly summary.
  * `messages` should be an array of `{ role: "user" | "model", content: string }`.
  */
-export async function askFollowUpQuestion({ summary, transactions = [], categories = [], messages }) {
+export async function askFollowUpQuestion({ summary, transactions = [], categories = [], income, currentSavings, debt = [], messages }) {
   if (!OLLAMA_URL) {
     throw new Error("VITE_OLLAMA_URL not set in environment.");
   }
@@ -251,13 +256,18 @@ export async function askFollowUpQuestion({ summary, transactions = [], categori
     return `- ${c.name}: Budget $${budget.toFixed(2)} | Spent this month $${spentThisMonth.toFixed(2)} | Remaining $${leftThisMonth.toFixed(2)}`;
   }).join("\n");
 
+  const debtLines = (debt || []).map(d => `- ${d.name}: $${d.amount}`).join("\n");
+  const debtContext = debtLines ? `\nCurrent Debt:\n${debtLines}` : "";
+  const incomeContext = income ? `\nMonthly Income: $${income}` : "";
+  const savingsContext = currentSavings ? `\nCurrent Savings: $${currentSavings}` : "";
+
   const systemContext = `You are a helpful financial assistant answering follow-up questions about the user's weekly summary.
 Keep your answers very concise, direct, formatting friendly (use bullet points), and helpful.
 
 Context: 
 Summary generated on ${summary.generated_on} for the week of ${summary.week_start} to ${summary.week_end}.
 Weekly Summary Text:
-"${summary.summary_text}"
+"${summary.summary_text}"${incomeContext}${savingsContext}${debtContext}
 
 Monthly Category Overview (Budget vs Spent):
 ${categoryContext}

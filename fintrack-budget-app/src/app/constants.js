@@ -21,6 +21,7 @@ export const defaultData = () => ({
   transactions: [],
   bills: [],
   recurring: [],
+  debt: [],
 });
 
 export const C = {

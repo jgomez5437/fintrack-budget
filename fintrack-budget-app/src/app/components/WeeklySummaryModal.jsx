@@ -34,7 +34,7 @@ function formatWeekLabel(row) {
   return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}, ${end.getFullYear()}`;
 }
 
-export default function WeeklySummaryModal({ userId, transactions = [], categories = [], isGenerating, onClose }) {
+export default function WeeklySummaryModal({ userId, transactions = [], categories = [], income, currentSavings, debt = [], isGenerating, onClose }) {
   const [summaries, setSummaries] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -64,6 +64,9 @@ export default function WeeklySummaryModal({ userId, transactions = [], categori
         summary: current,
         transactions,
         categories,
+        income,
+        currentSavings,
+        debt,
         messages: [...chatMessages, { role: "user", content: text }],
       });
       setChatMessages((prev) => [...prev, { role: "model", content: reply }]);
