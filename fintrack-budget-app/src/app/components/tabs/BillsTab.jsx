@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { C } from "../constants";
-import { inputStyle } from "../styles";
+import { C } from "../../constants";
+import { inputStyle } from "../../styles";
 
 export default function BillsTab({ bills = [], onAddBill, onDeleteBill, formatCurrency }) {
   const [showAdd, setShowAdd] = useState(false);

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function RecurringTab({
   recurring,

@@ -1,4 +1,4 @@
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function CategoryAlertBanner({ alerts, formatCurrency, onDismiss }) {
   if (!alerts.length) return null;

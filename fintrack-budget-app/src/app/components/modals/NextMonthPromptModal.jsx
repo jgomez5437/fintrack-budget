@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { C, MONTHS } from "../constants";
+import { C, MONTHS } from "../../constants";
 
 export default function NextMonthPromptModal({
   month,

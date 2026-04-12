@@ -1,5 +1,5 @@
 import { useOutletContext } from "react-router-dom";
-import BudgetTab from "../components/BudgetTab";
+import BudgetTab from "../components/tabs/BudgetTab";
 
 export default function Budget() {
   const context = useOutletContext();

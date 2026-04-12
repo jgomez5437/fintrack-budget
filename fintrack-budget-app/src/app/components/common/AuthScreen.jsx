@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 const initialForm = {
   email: "",

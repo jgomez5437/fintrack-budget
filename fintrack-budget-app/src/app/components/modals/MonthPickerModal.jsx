@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { C, MONTHS } from "../constants";
-import { getStorage } from "../services/storage";
+import { C, MONTHS } from "../../constants";
+import { getStorage } from "../../services/storage";
 
 export default function MonthPickerModal({ currentMonth, currentYear, onSelectMonth, onCancel }) {
   const [selectedYear, setSelectedYear] = useState(currentYear);

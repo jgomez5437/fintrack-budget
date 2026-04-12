@@ -1,14 +1,11 @@
-import { createPortal } from "react-dom";
 import { useEffect } from "react";
-import { C } from "../constants";
-import { inputStyle } from "../styles";
+import { C } from "../../constants";
 
-export default function CategoryEditModal({
-  editVal,
-  onEditValueChange,
-  onSave,
+export default function AddIncomeModal({
+  newIncome,
+  onIncomeChange,
   onCancel,
-  isIncome = false,
+  onConfirm,
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -18,7 +15,7 @@ export default function CategoryEditModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onCancel]);
 
-  const modal = (
+  return (
     <div
       onClick={onCancel}
       style={{
@@ -28,11 +25,11 @@ export default function CategoryEditModal({
         display: "grid",
         placeItems: "center",
         padding: "20px",
-        zIndex: 35,
+        zIndex: 30,
       }}
     >
       <div
-        onClick={(event) => event.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "480px",
@@ -43,26 +40,47 @@ export default function CategoryEditModal({
           padding: "24px",
         }}
       >
-          <div
-            style={{
-              fontSize: "12px",
-              fontWeight: 700,
-              letterSpacing: "1.6px",
-              color: isIncome ? C.green : C.blue,
-              textTransform: "uppercase",
-            }}
-          >
-            {isIncome ? "Edit Income Source" : "Edit Category"}
-          </div>
+        <div
+          style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            letterSpacing: "1.6px",
+            color: C.green,
+            textTransform: "uppercase",
+          }}
+        >
+          New Income Source
+        </div>
+        <h2
+          style={{
+            margin: "10px 0 0",
+            fontSize: "26px",
+            color: C.text,
+            lineHeight: 1.15,
+          }}
+        >
+          Add an income stream
+        </h2>
+        <div style={{ fontSize: "14px", color: C.textMid, marginTop: "6px" }}>
+          Track your paychecks, freelancing, or other income.
+        </div>
 
-        <div style={{ display: "grid", gap: "12px", marginTop: "18px" }}>
+        <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
           <input
-            value={editVal.name}
+            placeholder="e.g. Primary Job, Dividends..."
+            value={newIncome.name}
             onChange={(event) =>
-              onEditValueChange({ ...editVal, name: event.target.value })
+              onIncomeChange({ ...newIncome, name: event.target.value })
             }
-            placeholder="Category name"
-            style={inputStyle}
+            onKeyDown={(event) => event.key === "Enter" && onConfirm()}
+            style={{
+              background: C.surface,
+              border: `1.5px solid ${C.border}`,
+              borderRadius: "12px",
+              color: C.text,
+              fontSize: "15px",
+              padding: "14px 16px",
+            }}
           />
 
           <div
@@ -71,29 +89,29 @@ export default function CategoryEditModal({
               alignItems: "center",
               background: C.surface,
               border: `1.5px solid ${C.border}`,
-              borderRadius: "8px",
+              borderRadius: "12px",
               padding: "0 14px",
               gap: "6px",
             }}
           >
-            <span style={{ color: C.textLight, fontWeight: 600, fontSize: "16px" }}>
+            <span style={{ color: C.textLight, fontWeight: 700, fontSize: "16px" }}>
               $
             </span>
             <input
               type="number"
-              value={editVal.amount}
+              placeholder="Estimated amount (0.00)"
+              value={newIncome.amount}
               onChange={(event) =>
-                onEditValueChange({ ...editVal, amount: event.target.value })
+                onIncomeChange({ ...newIncome, amount: event.target.value })
               }
               onFocus={(e) => e.target.select()}
-              onKeyDown={(event) => event.key === "Enter" && onSave()}
-              placeholder="0.00"
+              onKeyDown={(event) => event.key === "Enter" && onConfirm()}
               style={{
                 background: "transparent",
                 border: "none",
                 color: C.text,
-                fontSize: "16px",
-                padding: "13px 0",
+                fontSize: "15px",
+                padding: "14px 0",
                 width: "100%",
                 minWidth: 0,
               }}
@@ -103,19 +121,19 @@ export default function CategoryEditModal({
 
         <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
           <button
-            onClick={onSave}
+            onClick={onConfirm}
             style={{
               border: "none",
               borderRadius: "16px",
               padding: "14px 18px",
-              background: isIncome ? C.green : C.blue,
+              background: C.green,
               color: C.white,
               fontSize: "15px",
               fontWeight: 700,
               cursor: "pointer",
             }}
           >
-            {isIncome ? "Save Changes" : "Save Category"}
+            Add income source
           </button>
 
           <button
@@ -137,6 +155,4 @@ export default function CategoryEditModal({
       </div>
     </div>
   );
-
-  return createPortal(modal, document.body);
 }

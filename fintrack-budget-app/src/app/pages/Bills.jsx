@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import BillsTab from "../components/BillsTab";
-import DebtTab from "../components/DebtTab";
+import BillsTab from "../components/tabs/BillsTab";
+import DebtTab from "../components/tabs/DebtTab";
 import { C } from "../constants";
 
 export default function Bills() {

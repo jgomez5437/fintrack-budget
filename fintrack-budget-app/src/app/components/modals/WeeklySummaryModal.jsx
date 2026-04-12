@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { C } from "../constants";
-import { getAllSummaries, askFollowUpQuestion } from "../services/weeklySummary";
+import { C } from "../../constants";
+import { getAllSummaries, askFollowUpQuestion } from "../../services/weeklySummary";
 
 function SparkleIcon() {
   return (

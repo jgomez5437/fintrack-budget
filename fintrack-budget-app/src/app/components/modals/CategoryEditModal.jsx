@@ -1,11 +1,14 @@
+import { createPortal } from "react-dom";
 import { useEffect } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
+import { inputStyle } from "../../styles";
 
-export default function AddCategoryModal({
-  newCat,
-  onCategoryChange,
+export default function CategoryEditModal({
+  editVal,
+  onEditValueChange,
+  onSave,
   onCancel,
-  onConfirm,
+  isIncome = false,
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -15,7 +18,7 @@ export default function AddCategoryModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onCancel]);
 
-  return (
+  const modal = (
     <div
       onClick={onCancel}
       style={{
@@ -25,11 +28,11 @@ export default function AddCategoryModal({
         display: "grid",
         placeItems: "center",
         padding: "20px",
-        zIndex: 30,
+        zIndex: 35,
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "480px",
@@ -40,44 +43,26 @@ export default function AddCategoryModal({
           padding: "24px",
         }}
       >
-        <div
-          style={{
-            fontSize: "12px",
-            fontWeight: 700,
-            letterSpacing: "1.6px",
-            color: C.blue,
-            textTransform: "uppercase",
-          }}
-        >
-          New Category
-        </div>
-        <h2
-          style={{
-            margin: "10px 0 0",
-            fontSize: "26px",
-            color: C.text,
-            lineHeight: 1.15,
-          }}
-        >
-          Add a budget category
-        </h2>
-
-        <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
-          <input
-            placeholder="Category name"
-            value={newCat.name}
-            onChange={(event) =>
-              onCategoryChange({ ...newCat, name: event.target.value })
-            }
-            onKeyDown={(event) => event.key === "Enter" && onConfirm()}
+          <div
             style={{
-              background: C.surface,
-              border: `1.5px solid ${C.border}`,
-              borderRadius: "12px",
-              color: C.text,
-              fontSize: "15px",
-              padding: "14px 16px",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "1.6px",
+              color: isIncome ? C.green : C.blue,
+              textTransform: "uppercase",
             }}
+          >
+            {isIncome ? "Edit Income Source" : "Edit Category"}
+          </div>
+
+        <div style={{ display: "grid", gap: "12px", marginTop: "18px" }}>
+          <input
+            value={editVal.name}
+            onChange={(event) =>
+              onEditValueChange({ ...editVal, name: event.target.value })
+            }
+            placeholder="Category name"
+            style={inputStyle}
           />
 
           <div
@@ -86,29 +71,29 @@ export default function AddCategoryModal({
               alignItems: "center",
               background: C.surface,
               border: `1.5px solid ${C.border}`,
-              borderRadius: "12px",
+              borderRadius: "8px",
               padding: "0 14px",
               gap: "6px",
             }}
           >
-            <span style={{ color: C.textLight, fontWeight: 700, fontSize: "16px" }}>
+            <span style={{ color: C.textLight, fontWeight: 600, fontSize: "16px" }}>
               $
             </span>
             <input
               type="number"
-              placeholder="0.00"
-              value={newCat.amount}
+              value={editVal.amount}
               onChange={(event) =>
-                onCategoryChange({ ...newCat, amount: event.target.value })
+                onEditValueChange({ ...editVal, amount: event.target.value })
               }
               onFocus={(e) => e.target.select()}
-              onKeyDown={(event) => event.key === "Enter" && onConfirm()}
+              onKeyDown={(event) => event.key === "Enter" && onSave()}
+              placeholder="0.00"
               style={{
                 background: "transparent",
                 border: "none",
                 color: C.text,
-                fontSize: "15px",
-                padding: "14px 0",
+                fontSize: "16px",
+                padding: "13px 0",
                 width: "100%",
                 minWidth: 0,
               }}
@@ -118,19 +103,19 @@ export default function AddCategoryModal({
 
         <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
           <button
-            onClick={onConfirm}
+            onClick={onSave}
             style={{
               border: "none",
               borderRadius: "16px",
               padding: "14px 18px",
-              background: C.blue,
+              background: isIncome ? C.green : C.blue,
               color: C.white,
               fontSize: "15px",
               fontWeight: 700,
               cursor: "pointer",
             }}
           >
-            Add category
+            {isIncome ? "Save Changes" : "Save Category"}
           </button>
 
           <button
@@ -152,4 +137,6 @@ export default function AddCategoryModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

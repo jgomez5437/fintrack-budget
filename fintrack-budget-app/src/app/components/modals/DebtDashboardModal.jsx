@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 function calculatePayoff(debts) {
   let maxMonths = 0;

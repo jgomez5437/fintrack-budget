@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function NamePromptModal({ onSaveName }) {
   const [nameInput, setNameInput] = useState("");

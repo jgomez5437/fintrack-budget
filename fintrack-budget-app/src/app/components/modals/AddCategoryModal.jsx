@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
 
-export default function AddIncomeModal({
-  newIncome,
-  onIncomeChange,
+export default function AddCategoryModal({
+  newCat,
+  onCategoryChange,
   onCancel,
   onConfirm,
 }) {
@@ -45,11 +45,11 @@ export default function AddIncomeModal({
             fontSize: "12px",
             fontWeight: 700,
             letterSpacing: "1.6px",
-            color: C.green,
+            color: C.blue,
             textTransform: "uppercase",
           }}
         >
-          New Income Source
+          New Category
         </div>
         <h2
           style={{
@@ -59,18 +59,15 @@ export default function AddIncomeModal({
             lineHeight: 1.15,
           }}
         >
-          Add an income stream
+          Add a budget category
         </h2>
-        <div style={{ fontSize: "14px", color: C.textMid, marginTop: "6px" }}>
-          Track your paychecks, freelancing, or other income.
-        </div>
 
         <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
           <input
-            placeholder="e.g. Primary Job, Dividends..."
-            value={newIncome.name}
+            placeholder="Category name"
+            value={newCat.name}
             onChange={(event) =>
-              onIncomeChange({ ...newIncome, name: event.target.value })
+              onCategoryChange({ ...newCat, name: event.target.value })
             }
             onKeyDown={(event) => event.key === "Enter" && onConfirm()}
             style={{
@@ -99,10 +96,10 @@ export default function AddIncomeModal({
             </span>
             <input
               type="number"
-              placeholder="Estimated amount (0.00)"
-              value={newIncome.amount}
+              placeholder="0.00"
+              value={newCat.amount}
               onChange={(event) =>
-                onIncomeChange({ ...newIncome, amount: event.target.value })
+                onCategoryChange({ ...newCat, amount: event.target.value })
               }
               onFocus={(e) => e.target.select()}
               onKeyDown={(event) => event.key === "Enter" && onConfirm()}
@@ -126,14 +123,14 @@ export default function AddIncomeModal({
               border: "none",
               borderRadius: "16px",
               padding: "14px 18px",
-              background: C.green,
+              background: C.blue,
               color: C.white,
               fontSize: "15px",
               fontWeight: 700,
               cursor: "pointer",
             }}
           >
-            Add income source
+            Add category
           </button>
 
           <button

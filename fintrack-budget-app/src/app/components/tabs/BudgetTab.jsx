@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { C } from "../constants";
-import CategoryEditModal from "./CategoryEditModal";
-import { inputStyle } from "../styles";
+import { C } from "../../constants";
+import CategoryEditModal from "../modals/CategoryEditModal";
+import { inputStyle } from "../../styles";
 
 export default function BudgetTab({
   incomeSectionRef,

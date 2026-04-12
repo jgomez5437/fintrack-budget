@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function DeleteConfirmModal({
   title,

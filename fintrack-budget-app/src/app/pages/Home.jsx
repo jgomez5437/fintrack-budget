@@ -1,7 +1,7 @@
 import { useOutletContext } from "react-router-dom";
-import SummaryCards from "../components/SummaryCards";
-import CategoryAlertBanner from "../components/CategoryAlertBanner";
-import SkeletonDashboard from "../components/SkeletonDashboard";
+import SummaryCards from "../components/common/SummaryCards";
+import CategoryAlertBanner from "../components/layout/CategoryAlertBanner";
+import SkeletonDashboard from "../components/layout/SkeletonDashboard";
 import { C } from "../constants";
 
 export default function Home() {

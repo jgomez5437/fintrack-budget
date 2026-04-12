@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { C, MONTHS } from "../constants";
-import MonthPickerModal from "./MonthPickerModal";
+import { C, MONTHS } from "../../constants";
+import MonthPickerModal from "../modals/MonthPickerModal";
 
 export default function Header({
   userEmail,

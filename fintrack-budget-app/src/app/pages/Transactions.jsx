@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import TransactionsTab from "../components/TransactionsTab";
-import RecurringTab from "../components/RecurringTab";
+import TransactionsTab from "../components/tabs/TransactionsTab";
+import RecurringTab from "../components/tabs/RecurringTab";
 import { C } from "../constants";
 
 export default function Transactions() {

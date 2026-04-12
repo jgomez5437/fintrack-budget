@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { C } from "../constants";
-import DebtDashboardModal from "./DebtDashboardModal";
+import { C } from "../../constants";
+import DebtDashboardModal from "../modals/DebtDashboardModal";
 
 const inputStyle = {
   padding: "10px",

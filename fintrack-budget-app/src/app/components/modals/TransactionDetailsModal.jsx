@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useState, useEffect } from "react";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function TransactionDetailsModal({
   transaction,

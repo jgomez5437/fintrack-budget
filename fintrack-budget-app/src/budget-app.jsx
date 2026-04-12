@@ -23,19 +23,19 @@ import {
   signOutUser,
   signUpWithEmail,
 } from "./app/services/supabase";
-import GlobalStyles from "./app/components/GlobalStyles";
-import AuthScreen from "./app/components/AuthScreen";
-import Header from "./app/components/Header";
-import ImportReviewModal from "./app/components/ImportReviewModal";
-import NextMonthPromptModal from "./app/components/NextMonthPromptModal";
-import DeleteConfirmModal from "./app/components/DeleteConfirmModal";
-import AddCategoryModal from "./app/components/AddCategoryModal";
-import AddIncomeModal from "./app/components/AddIncomeModal";
-import SkeletonDashboard from "./app/components/SkeletonDashboard";
-import NamePromptModal from "./app/components/NamePromptModal";
-import SettingsModal from "./app/components/SettingsModal";
-import WeeklySummaryModal from "./app/components/WeeklySummaryModal";
-import BottomNav from "./app/components/BottomNav";
+import GlobalStyles from "./app/components/layout/GlobalStyles";
+import AuthScreen from "./app/components/common/AuthScreen";
+import Header from "./app/components/layout/Header";
+import ImportReviewModal from "./app/components/modals/ImportReviewModal";
+import NextMonthPromptModal from "./app/components/modals/NextMonthPromptModal";
+import DeleteConfirmModal from "./app/components/modals/DeleteConfirmModal";
+import AddCategoryModal from "./app/components/modals/AddCategoryModal";
+import AddIncomeModal from "./app/components/modals/AddIncomeModal";
+import SkeletonDashboard from "./app/components/layout/SkeletonDashboard";
+import NamePromptModal from "./app/components/modals/NamePromptModal";
+import SettingsModal from "./app/components/modals/SettingsModal";
+import WeeklySummaryModal from "./app/components/modals/WeeklySummaryModal";
+import BottomNav from "./app/components/layout/BottomNav";
 import Home from "./app/pages/Home";
 import Budget from "./app/pages/Budget";
 import Transactions from "./app/pages/Transactions";

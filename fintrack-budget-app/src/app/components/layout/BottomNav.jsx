@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function BottomNav() {
   const [isDesktop, setIsDesktop] = useState(false);

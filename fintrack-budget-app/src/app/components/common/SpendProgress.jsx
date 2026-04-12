@@ -1,4 +1,4 @@
-import { C } from "../constants";
+import { C } from "../../constants";
 
 export default function SpendProgress({ income, spendPct, barColor }) {
   if (income <= 0) return null;
