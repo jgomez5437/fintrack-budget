@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C } from "../../../app/constants";
-import { getSupabase } from "../../../app/services/supabase";
+import { getSupabase } from "../services/supabase";
 
 export default function SettingsModal({ onClose, session, onSignOut, isSigningOut, onGenerateSummary, isGeneratingSummary }) {
   const [loading, setLoading] = useState(true);

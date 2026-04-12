@@ -23,6 +23,8 @@ export interface Database {
   }
 }
 
+export type AppData = Database['public']['Tables']['monthly_budgets']['Row'];
+
 export interface BudgetCategory {
   id: string | number;
   name: string;
@@ -35,6 +37,8 @@ export interface Transaction {
   date: string;
   name: string;
   amount: string | number;
+  importSource?: string;
+  importDateValue?: number;
 }
 
 export interface Bill {

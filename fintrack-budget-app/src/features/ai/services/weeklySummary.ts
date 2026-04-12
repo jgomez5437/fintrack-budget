@@ -1,4 +1,4 @@
-import { getSupabase } from "../../../app/services/supabase";
+import { getSupabase } from "../../common/services/supabase";
 
 const OLLAMA_URL = (import.meta.env.VITE_OLLAMA_URL || "").replace(/\/+$/, "");
 const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || "gemma4";

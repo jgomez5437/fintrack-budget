@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import { C } from "../../../app/constants";
-import { inputStyle } from "../../../app/styles";
+import { inputStyle } from "../../common/styles";
 
 export default function CategoryEditModal({
   editVal,

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { C } from "../../../app/constants";
 import TransactionDetailsModal from "./TransactionDetailsModal";
-import { inputStyle, selectStyle } from "../../../app/styles";
+import { inputStyle, selectStyle } from "../../common/styles";
 
 export default function TransactionsTab({
   categories,

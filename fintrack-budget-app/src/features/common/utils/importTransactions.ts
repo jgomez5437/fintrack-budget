@@ -1,4 +1,4 @@
-import { cleanMerchant } from "../../../app/utils/merchant";
+import { cleanMerchant } from "./merchant";
 import { todayLabel } from "./formatters";
 
 let sheetJsPromise;

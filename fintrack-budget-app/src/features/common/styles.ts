@@ -1,4 +1,4 @@
-import { C } from "./constants";
+import { C } from "../../app/constants";
 
 export const inputStyle = {
   background: C.surface,

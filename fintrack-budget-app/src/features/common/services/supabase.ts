@@ -1,20 +1,21 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient, Session, AuthChangeEvent } from "@supabase/supabase-js";
+import type { Database } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string;
 
-let client;
-let sessionPromise;
+let client: SupabaseClient<Database> | undefined;
+let sessionPromise: Promise<Session | null> | null;
 
-function hasSupabaseEnv() {
+export function hasSupabaseEnv(): boolean {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
-export function getSupabase() {
+export function getSupabase(): SupabaseClient<Database> | null {
   if (!hasSupabaseEnv()) return null;
 
   if (!client) {
-    client = createClient(supabaseUrl, supabaseAnonKey, {
+    client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -25,7 +26,7 @@ export function getSupabase() {
   return client;
 }
 
-export async function ensureSupabaseSession() {
+export async function ensureSupabaseSession(): Promise<Session | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
@@ -46,7 +47,7 @@ export async function ensureSupabaseSession() {
   return sessionPromise;
 }
 
-export async function getCurrentSession() {
+export async function getCurrentSession(): Promise<Session | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
@@ -60,7 +61,7 @@ export async function getCurrentSession() {
   return session;
 }
 
-export function onAuthStateChange(callback) {
+export function onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
   const supabase = getSupabase();
   if (!supabase) {
     return { data: { subscription: { unsubscribe() {} } } };
@@ -69,7 +70,7 @@ export function onAuthStateChange(callback) {
   return supabase.auth.onAuthStateChange(callback);
 }
 
-export async function signInWithEmail({ email, password }) {
+export async function signInWithEmail({ email, password }: any) {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Supabase is not configured.");
 
@@ -79,11 +80,10 @@ export async function signInWithEmail({ email, password }) {
   });
 
   if (error) throw error;
-
   return data;
 }
 
-export async function signUpWithEmail({ email, password }) {
+export async function signUpWithEmail({ email, password }: any) {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Supabase is not configured.");
 
@@ -93,11 +93,10 @@ export async function signUpWithEmail({ email, password }) {
   });
 
   if (error) throw error;
-
   return data;
 }
 
-export async function signOutUser() {
+export async function signOutUser(): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) return;
 

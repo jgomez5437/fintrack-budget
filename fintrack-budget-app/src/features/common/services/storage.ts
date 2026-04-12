@@ -1,5 +1,5 @@
 import { defaultData } from "../../../app/constants";
-import { ensureSupabaseSession, getSupabase, onAuthStateChange } from "../../../app/services/supabase";
+import { ensureSupabaseSession, getSupabase, onAuthStateChange } from "./supabase";
 
 export const LAST_CATEGORY_KEY = "fintrack-last-cat";
 export const CATEGORY_ALERT_COUNT_KEY = "fintrack-category-alert-count";

@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { C, defaultData } from "./app/constants";
-import {
-  buildBudgetSummary,
-  getCategoryAlerts,
-  getCategoryById,
-} from "./app/utils/budget";
+import { buildBudgetSummary, getCategoryAlerts } from "./features/budget/utils/budget";
 import { formatCurrency, todayLabel } from "./features/common/utils/formatters";
 import { parseImportFile } from "./features/common/utils/importTransactions";
 import { autoAssignImportCategory } from "./features/common/utils/importCategoryRules";
@@ -22,7 +18,7 @@ import {
   signInWithEmail,
   signOutUser,
   signUpWithEmail,
-} from "./app/services/supabase";
+} from "./features/common/services/supabase";
 import GlobalStyles from "./features/common/components/GlobalStyles";
 import AuthScreen from "./features/common/components/AuthScreen";
 import Header from "./features/dashboard/components/Header";
@@ -101,27 +97,32 @@ export default function BudgetApp() {
   const [firstName, setFirstName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [data, setData] = useState(() => defaultData());
-  const [newCat, setNewCat] = useState({ name: "", amount: "" });
+  const [data, setData] = useState<any>(defaultData);
+  const [newCat, setNewCat] = useState<any>({ name: "", amount: "" });
   const [showAddIncomeModal, setShowAddIncomeModal] = useState(false);
-  const [newIncome, setNewIncome] = useState({ name: "", amount: "" });
+  const [newIncome, setNewIncome] = useState<any>({ name: "", amount: "" });
   const [editingId, setEditingId] = useState(null);
-  const [editVal, setEditVal] = useState({});
+  const [editVal, setEditVal] = useState<any>({});
   const [editingIncome, setEditingIncome] = useState(false);
   const [incomeInput, setIncomeInput] = useState("");
   const [editingSavings, setEditingSavings] = useState(false);
   const [savingsInput, setSavingsInput] = useState("");
   const [activeTab, setActiveTab] = useState("budget");
   const [showTxForm, setShowTxForm] = useState(false);
-  const [newTx, setNewTx] = useState({ name: "", amount: "", categoryId: "" });
+  const [newTx, setNewTx] = useState<any>({
+    name: "",
+    amount: "",
+    categoryId: "",
+  });
   const [autocomplete, setAutocomplete] = useState([]);
   const [lastCategoryId, setLastCategoryId] = useState("");
   const [inlineCatId, setInlineCatId] = useState(null);
-  const [inlineTx, setInlineTx] = useState({ name: "", amount: "" });
+  const [inlineTx, setInlineTx] = useState<any>({ name: "", amount: "" });
   const [inlineAutocomplete, setInlineAutocomplete] = useState([]);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickTx, setQuickTx] = useState({ name: "", amount: "", categoryId: "" });
+  const [quickTx, setQuickTx] = useState<any>({ name: "", amount: "", categoryId: "" });
   const [quickAutocomplete, setQuickAutocomplete] = useState([]);
+  const [autopayToast, setAutopayToast] = useState<any>(null);
   const [importRows, setImportRows] = useState(null);
   const [importError, setImportError] = useState("");
   const [isImportDragActive, setIsImportDragActive] = useState(false);
@@ -139,12 +140,17 @@ export default function BudgetApp() {
   const [showUncategorizedAlert, setShowUncategorizedAlert] = useState(false);
   const [uncategorizedAlertEvaluated, setUncategorizedAlertEvaluated] = useState(false);
   const [showUncategorizedSection, setShowUncategorizedSection] = useState(false);
-  const [uncategorizedAssignments, setUncategorizedAssignments] = useState({});
+  const [uncategorizedAssignments, setUncategorizedAssignments] = useState<any>({});
   const [uncategorizedSaveSuccess, setUncategorizedSaveSuccess] = useState(false);
   const [weeklySummary, setWeeklySummary] = useState(null);       // today's row or null
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [newUncategorized, setNewUncategorized] = useState<any>({
+    name: "",
+    amount: "",
+    categoryId: "",
+  });
 
   const incomeRef = useRef(null);
   const savingsRef = useRef(null);
@@ -356,7 +362,7 @@ export default function BudgetApp() {
       if (!isMounted) return;
       if (existing) {
         setWeeklySummary(existing);
-        const key = `weekly-banner-dismissed-${userId}-${existing.generated_on}`;
+        const key = `weekly-banner-dismissed-${userId}-${(existing as any).generated_on}`;
         if (localStorage.getItem(key)) setBannerDismissed(true);
         return;
       }
@@ -779,8 +785,8 @@ export default function BudgetApp() {
     setEditVal({ name: category.name, amount: category.amount });
   };
 
-  const saveEdit = (id) => {
-    if (!editVal.name.trim() || !editVal.amount) return;
+  const saveEdit = (id: any) => {
+    if (!(editVal as any).name?.trim() || !(editVal as any).amount) return;
 
     update({
       ...data,
@@ -905,7 +911,7 @@ export default function BudgetApp() {
     [data, nextMonthPrompt, storage],
   );
 
-  const openTxForm = (prefill = {}) => {
+  const openTxForm = (prefill: any = {}) => {
     setNewTx({
       name: prefill.name || "",
       amount: prefill.amount || "",
@@ -936,7 +942,7 @@ export default function BudgetApp() {
     setNewTx((current) => ({
       ...current,
       name,
-      amount: last?.amount || current.amount,
+      amount: String(last?.amount || current.amount),
       categoryId: last?.categoryId?.toString() || current.categoryId,
     }));
     setAutocomplete([]);
@@ -1023,15 +1029,15 @@ export default function BudgetApp() {
   const updateTransactionCategory = (transactionId, categoryId, splitData = null) => {
     const isSplit = !!(splitData && splitData.isSplit);
     const targetTransaction = transactions.find(t => t.id === transactionId);
-    const catId = isSplit ? null : (categoryId ? parseInt(categoryId, 10) : null);
+    const catId = isSplit ? null : (categoryId ? parseInt(String(categoryId), 10) : null);
     
     update({
       ...data,
       transactions: transactions.map((transaction) =>
         transaction.id === transactionId
           ? (() => {
-              let amount = parseFloat(transaction.amount) || 0;
-              if (catId && data.incomeCategories.some(ic => ic.id === catId) && amount > 0) {
+              let amount = parseFloat(String(transaction.amount)) || 0;
+              if (catId && data.incomeCategories && data.incomeCategories.some((ic: any) => ic.id === catId) && amount > 0) {
                 amount = amount * -1;
               }
 
@@ -1234,7 +1240,7 @@ export default function BudgetApp() {
     setInlineTx((current) => ({
       ...current,
       name,
-      amount: last?.amount || current.amount,
+      amount: String(last?.amount || current.amount),
     }));
     setInlineAutocomplete([]);
   };
@@ -1281,7 +1287,7 @@ export default function BudgetApp() {
     setQuickTx((current) => ({
       ...current,
       name,
-      amount: last?.amount || current.amount,
+      amount: String(last?.amount || current.amount),
       categoryId: last?.categoryId?.toString() || current.categoryId,
     }));
     setQuickAutocomplete([]);
@@ -1428,7 +1434,7 @@ export default function BudgetApp() {
         {
           id: Date.now() + Math.random(),
           name: transaction.name,
-          amount: parseFloat(Math.abs(transaction.amount)),
+          amount: String(parseFloat(String(Math.abs(Number(transaction.amount))))),
           dayOfMonth: extractDayOfMonth(transaction.date) || 1,
           categoryId: transaction.categoryId ? parseInt(transaction.categoryId, 10) : null,
         },
