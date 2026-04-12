@@ -14,9 +14,10 @@ const inputStyle = {
   boxSizing: "border-box"
 };
 
-export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCurrency, onToggleAutopay }) {
+export default function DebtTab({ debts = [], onAddDebt, onEditDebt, onDeleteDebt, formatCurrency, onToggleAutopay }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [editingDebtId, setEditingDebtId] = useState(null);
   const [newDebt, setNewDebt] = useState({
     name: "",
     amount: "",
@@ -28,6 +29,19 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
     isCreditCard: true,
   });
 
+  const startEdit = (debt) => {
+    setNewDebt({ ...debt });
+    setEditingDebtId(debt.id);
+    setShowAdd(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancel = () => {
+    setEditingDebtId(null);
+    setNewDebt({ name: "", amount: "", payoffDate: "", rate: "", min: "", autopay: false, dueDay: "", isCreditCard: true });
+    setShowAdd(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newDebt.name || !newDebt.amount) return;
@@ -36,7 +50,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
     if (!finalPayoffDate) {
       let amt = parseFloat(newDebt.amount);
       let min = parseFloat(newDebt.min);
-      let apr = parseFloat(newDebt.rate);
+      let apr = parseFloat(newDebt.rate) || 0;
       let months = 0;
       let isCC = newDebt.isCreditCard;
       while(amt > 0 && months < 1200) {
@@ -54,12 +68,21 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
       }
     }
 
-    onAddDebt({
-      ...newDebt,
-      payoffDate: finalPayoffDate || "",
-      lastAutopayDate: new Date().toISOString().split('T')[0],
-      id: Date.now(),
-    });
+    if (editingDebtId) {
+      onEditDebt({
+        ...newDebt,
+        payoffDate: finalPayoffDate || "",
+        id: editingDebtId,
+      });
+      setEditingDebtId(null);
+    } else {
+      onAddDebt({
+        ...newDebt,
+        payoffDate: finalPayoffDate || "",
+        lastAutopayDate: new Date().toISOString().split('T')[0],
+        id: Date.now(),
+      });
+    }
     
     setNewDebt({ name: "", amount: "", payoffDate: "", rate: "", min: "", autopay: false, dueDay: "", isCreditCard: true });
     setShowAdd(false);
@@ -145,7 +168,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
               color: C.text,
             }}
           >
-            Add New Debt
+            {editingDebtId ? "Edit Debt" : "Add New Debt"}
           </div>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
@@ -193,7 +216,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <div style={{ fontSize: "11px", fontWeight: 700, color: C.textLight, textTransform: "uppercase", marginBottom: "6px" }}>Interest Rate</div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: C.textLight, textTransform: "uppercase", marginBottom: "6px" }}>Interest Rate {!newDebt.isCreditCard && "(Optional)"}</div>
                 <div
                   style={{
                     display: "flex",
@@ -220,7 +243,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                       width: "100%",
                       minWidth: 0,
                     }}
-                    required
+                    required={newDebt.isCreditCard}
                   />
                   <span style={{ color: C.textLight, fontWeight: 600 }}>%</span>
                 </div>
@@ -370,11 +393,11 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                   transition: "background 0.15s",
                 }}
               >
-                Save Debt
+                {editingDebtId ? "Update Debt" : "Save Debt"}
               </button>
               <button
                 type="button"
-                onClick={() => setShowAdd(false)}
+                onClick={handleCancel}
                 style={{
                   background: "transparent",
                   border: `1.5px solid ${C.border}`,
@@ -453,7 +476,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
               <div style={{ display: "flex", gap: "12px", background: C.surfaceAlt, padding: "10px", borderRadius: "8px" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: "11px", color: C.textLight, fontWeight: 700, textTransform: "uppercase" }}>Interest Rate</div>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>{debt.rate}%</div>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>{debt.rate ? `${debt.rate}%` : "0%"}</div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: "11px", color: C.textLight, fontWeight: 700, textTransform: "uppercase" }}>Min Payment</div>
@@ -495,6 +518,23 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                   <span style={{ fontSize: "12px", fontWeight: 700, color: C.textLight }}>Autopay</span>
                 </div>
                 
+                <div style={{ display: "flex", gap: "8px" }}>
+                 <button
+                   onClick={() => startEdit(debt)}
+                   style={{
+                     background: "transparent",
+                     border: `1.5px solid ${C.border}`,
+                     borderRadius: "8px",
+                     color: C.blue,
+                     fontSize: "12px",
+                     fontWeight: 700,
+                     cursor: "pointer",
+                     padding: "6px 14px",
+                     transition: "background 0.15s",
+                   }}
+                 >
+                   Edit
+                 </button>                
                  <button
                    onClick={() => onDeleteDebt(debt.id)}
                    style={{
@@ -510,6 +550,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                  >
                    Delete
                  </button>
+                </div>
               </div>
             </div>
           ))}

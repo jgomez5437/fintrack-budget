@@ -583,23 +583,52 @@ export default function BudgetApp() {
   useEffect(() => {
     if (!budgetLoaded || !data.debt || data.debt.length === 0) return;
     let modified = false;
-    const todayStr = new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     const newDebts = data.debt.map((d) => {
-      if (!d.autopay || !d.date) return d;
+      if (!d.autopay || !d.dueDay) return d;
       let updated = { ...d };
 
-      while (updated.date <= todayStr && parseFloat(updated.amount) > 0) {
+      if (!updated.lastAutopayDate) {
+        updated.lastAutopayDate = todayStr;
         modified = true;
-        const pmt = parseFloat(updated.min) || 0;
-        const amt = parseFloat(updated.amount) || 0;
-        updated.amount = Math.max(0, amt - pmt).toFixed(2);
-        
-        const [y, m, day] = updated.date.split("-");
-        const dObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(day, 10));
-        dObj.setMonth(dObj.getMonth() + 1);
-        updated.date = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
       }
+
+      let [ly, lm, ld] = updated.lastAutopayDate.split("-").map(Number);
+      let nextDue = new Date(ly, lm - 1, 1);
+      const daysInMonth = new Date(ly, lm, 0).getDate();
+      let dueDaySafe = Math.min(parseInt(updated.dueDay, 10), daysInMonth);
+      
+      if (ld >= dueDaySafe) {
+        lm++; 
+        if (lm > 12) { lm -= 12; ly++; }
+      }
+      
+      let nextDaysInMonth = new Date(ly, lm, 0).getDate();
+      let nextDueDaySafe = Math.min(parseInt(updated.dueDay, 10), nextDaysInMonth);
+      let nextDueStr = `${ly}-${String(lm).padStart(2, '0')}-${String(nextDueDaySafe).padStart(2, '0')}`;
+
+      while (nextDueStr <= todayStr && parseFloat(updated.amount) > 0) {
+        modified = true;
+        let amt = parseFloat(updated.amount) || 0;
+        const pmt = parseFloat(updated.min) || 0;
+        
+        if (updated.isCreditCard) {
+            let rate = Math.pow(1 + (parseFloat(updated.rate) || 0) / 100 / 365, 30.416) - 1;
+            amt += (amt * rate);
+        }
+        
+        updated.amount = Math.max(0, amt - pmt).toFixed(2);
+        updated.lastAutopayDate = nextDueStr;
+
+        lm++; 
+        if (lm > 12) { lm -= 12; ly++; }
+        nextDaysInMonth = new Date(ly, lm, 0).getDate();
+        nextDueDaySafe = Math.min(parseInt(updated.dueDay, 10), nextDaysInMonth);
+        nextDueStr = `${ly}-${String(lm).padStart(2, '0')}-${String(nextDueDaySafe).padStart(2, '0')}`;
+      }
+      
       return updated;
     });
 
@@ -1605,6 +1634,7 @@ export default function BudgetApp() {
     addBill,
     deleteBill,
     addDebt: (newDebt) => update({ ...data, debt: [...(data.debt || []), newDebt] }),
+    editDebt: (updatedDebt) => update({ ...data, debt: (data.debt || []).map((d) => d.id === updatedDebt.id ? updatedDebt : d) }),
     deleteDebt: (debtId) => update({ ...data, debt: (data.debt || []).filter((d) => d.id !== debtId) }),
     toggleDebtAutopay: (debtId) => update({ ...data, debt: (data.debt || []).map((d) => d.id === debtId ? { ...d, autopay: !d.autopay } : d) }),
     toggleRecurring,

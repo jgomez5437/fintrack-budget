@@ -69,6 +69,7 @@ export default function Bills() {
         <DebtTab
           debts={context.data.debt || []}
           onAddDebt={context.addDebt}
+          onEditDebt={context.editDebt}
           onDeleteDebt={context.deleteDebt}
           onToggleAutopay={context.toggleDebtAutopay}
           formatCurrency={context.formatCurrency}
