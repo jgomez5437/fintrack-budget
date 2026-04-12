@@ -70,6 +70,7 @@ export default function Bills() {
           debts={context.data.debt || []}
           onAddDebt={context.addDebt}
           onDeleteDebt={context.deleteDebt}
+          onToggleAutopay={context.toggleDebtAutopay}
           formatCurrency={context.formatCurrency}
         />
       )}

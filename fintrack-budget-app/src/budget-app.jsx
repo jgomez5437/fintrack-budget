@@ -482,6 +482,8 @@ export default function BudgetApp() {
     spentByCategory,
   ]);
 
+
+
   useEffect(() => {
     if (
       authLoading ||
@@ -576,6 +578,35 @@ export default function BudgetApp() {
     },
     [persist],
   );
+
+  // Execute Debt Autopay Decrements
+  useEffect(() => {
+    if (!budgetLoaded || !data.debt || data.debt.length === 0) return;
+    let modified = false;
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    const newDebts = data.debt.map((d) => {
+      if (!d.autopay || !d.date) return d;
+      let updated = { ...d };
+
+      while (updated.date <= todayStr && parseFloat(updated.amount) > 0) {
+        modified = true;
+        const pmt = parseFloat(updated.min) || 0;
+        const amt = parseFloat(updated.amount) || 0;
+        updated.amount = Math.max(0, amt - pmt).toFixed(2);
+        
+        const [y, m, day] = updated.date.split("-");
+        const dObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(day, 10));
+        dObj.setMonth(dObj.getMonth() + 1);
+        updated.date = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+      }
+      return updated;
+    });
+
+    if (modified) {
+      update({ ...data, debt: newDebts });
+    }
+  }, [budgetLoaded, data.debt, update]);
 
   const mostRecentImportedTransactionLabel = transactions
     .filter(
@@ -1575,6 +1606,7 @@ export default function BudgetApp() {
     deleteBill,
     addDebt: (newDebt) => update({ ...data, debt: [...(data.debt || []), newDebt] }),
     deleteDebt: (debtId) => update({ ...data, debt: (data.debt || []).filter((d) => d.id !== debtId) }),
+    toggleDebtAutopay: (debtId) => update({ ...data, debt: (data.debt || []).map((d) => d.id === debtId ? { ...d, autopay: !d.autopay } : d) }),
     toggleRecurring,
   };
 

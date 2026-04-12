@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C } from "../constants";
+import DebtDashboardModal from "./DebtDashboardModal";
 
 const inputStyle = {
   padding: "10px",
@@ -13,26 +14,54 @@ const inputStyle = {
   boxSizing: "border-box"
 };
 
-export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCurrency }) {
+export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCurrency, onToggleAutopay }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
   const [newDebt, setNewDebt] = useState({
     name: "",
     amount: "",
-    date: "",
+    payoffDate: "",
     rate: "",
     min: "",
+    autopay: false,
+    dueDay: "",
+    isCreditCard: true,
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newDebt.name || !newDebt.amount) return;
     
+    let finalPayoffDate = newDebt.payoffDate;
+    if (!finalPayoffDate) {
+      let amt = parseFloat(newDebt.amount);
+      let min = parseFloat(newDebt.min);
+      let apr = parseFloat(newDebt.rate);
+      let months = 0;
+      let isCC = newDebt.isCreditCard;
+      while(amt > 0 && months < 1200) {
+        let rate = isCC ? (Math.pow(1 + apr/100/365, 30.416) - 1) : (apr/100/12);
+        let interest = amt * rate;
+        let p = min - interest;
+        if(p <= 0) break;
+        amt -= p;
+        months++;
+      }
+      if (months > 0 && months < 1200) {
+        let d = new Date();
+        d.setMonth(d.getMonth() + months);
+        finalPayoffDate = d.toISOString().split('T')[0];
+      }
+    }
+
     onAddDebt({
       ...newDebt,
+      payoffDate: finalPayoffDate || "",
+      lastAutopayDate: new Date().toISOString().split('T')[0],
       id: Date.now(),
     });
     
-    setNewDebt({ name: "", amount: "", date: "", rate: "", min: "" });
+    setNewDebt({ name: "", amount: "", payoffDate: "", rate: "", min: "", autopay: false, dueDay: "", isCreditCard: true });
     setShowAdd(false);
   };
 
@@ -56,24 +85,44 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
         >
           CURRENT DEBT
         </div>
-        {!showAdd && (
-          <button
-            onClick={() => setShowAdd(true)}
-            style={{
-              background: C.blueLight,
-              border: "none",
-              color: C.blue,
-              padding: "6px 12px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "background 0.15s",
-            }}
-          >
-            + Add Debt
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "8px" }}>
+          {debts.length > 0 && !showAdd && (
+            <button
+              onClick={() => setShowDashboard(true)}
+              style={{
+                background: C.surfaceAlt,
+                border: `1.5px solid ${C.border}`,
+                color: C.text,
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              Dashboard
+            </button>
+          )}
+          {!showAdd && (
+            <button
+              onClick={() => setShowAdd(true)}
+              style={{
+                background: C.blueLight,
+                border: "none",
+                color: C.blue,
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "background 0.15s",
+              }}
+            >
+              + Add Debt
+            </button>
+          )}
+        </div>
       </div>
 
       {showAdd && (
@@ -108,7 +157,8 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                 required
               />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
               <div
                 style={{
                   display: "flex",
@@ -139,77 +189,171 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                   required
                 />
               </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: C.textLight, textTransform: "uppercase", marginBottom: "6px" }}>Interest Rate</div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: C.surface,
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: "8px",
+                    padding: "0 12px",
+                    gap: "5px",
+                  }}
+                >
+                  <input
+                    type="number"
+                    placeholder="Rate"
+                    step="0.01"
+                    value={newDebt.rate}
+                    onChange={(e) => setNewDebt({ ...newDebt, rate: e.target.value })}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: C.text,
+                      fontSize: "15px",
+                      padding: "10px 0",
+                      width: "100%",
+                      minWidth: 0,
+                    }}
+                    required
+                  />
+                  <span style={{ color: C.textLight, fontWeight: 600 }}>%</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: C.textLight, textTransform: "uppercase", marginBottom: "6px" }}>Min Payment</div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: C.surface,
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: "8px",
+                    padding: "0 12px",
+                    gap: "5px",
+                  }}
+                >
+                  <span style={{ color: C.textLight, fontWeight: 600 }}>$</span>
+                  <input
+                    type="number"
+                    placeholder="Min Payment"
+                    step="0.01"
+                    value={newDebt.min}
+                    onChange={(e) => setNewDebt({ ...newDebt, min: e.target.value })}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: C.text,
+                      fontSize: "15px",
+                      padding: "10px 0",
+                      width: "100%",
+                      minWidth: 0,
+                    }}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surfaceAlt, padding: "12px", borderRadius: "8px" }}>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: C.text }}>Credit Card / Daily Compound</div>
+                <div style={{ fontSize: "11px", color: C.textMid }}>If off, evaluates as Simple Interest (Car Loan)</div>
+              </div>
+              <label style={{ position: "relative", display: "inline-block", width: "42px", height: "24px" }}>
+                <input
+                  type="checkbox"
+                  checked={newDebt.isCreditCard}
+                  onChange={(e) => setNewDebt({ ...newDebt, isCreditCard: e.target.checked })}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                  position: "absolute", cursor: "pointer", top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: newDebt.isCreditCard ? C.blue : C.border, transition: ".4s", borderRadius: "24px",
+                }}>
+                  <span style={{
+                    position: "absolute", content: '""', height: "18px", width: "18px", left: "3px", bottom: "3px",
+                    backgroundColor: "white", transition: ".4s", borderRadius: "50%",
+                    transform: newDebt.isCreditCard ? "translateX(18px)" : "translateX(0)",
+                  }}></span>
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: C.textLight, textTransform: "uppercase", marginBottom: "6px" }}>Expected Payoff Date (Leave blank to auto-calculate)</div>
               <input
                 type="date"
-                title="Current Payoff Date"
-                value={newDebt.date}
-                onChange={(e) => setNewDebt({ ...newDebt, date: e.target.value })}
+                title="Leave blank to auto-calculate"
+                value={newDebt.payoffDate}
+                onChange={(e) => setNewDebt({ ...newDebt, payoffDate: e.target.value })}
                 style={inputStyle}
-                required
               />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  background: C.surface,
-                  border: `1.5px solid ${C.border}`,
-                  borderRadius: "8px",
-                  padding: "0 12px",
-                  gap: "5px",
-                }}
-              >
-                <input
-                  type="number"
-                  placeholder="Interest Rate"
-                  step="0.01"
-                  value={newDebt.rate}
-                  onChange={(e) => setNewDebt({ ...newDebt, rate: e.target.value })}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: C.text,
-                    fontSize: "15px",
-                    padding: "10px 0",
-                    width: "100%",
-                    minWidth: 0,
-                  }}
-                  required
-                />
-                <span style={{ color: C.textLight, fontWeight: 600 }}>%</span>
+            
+            <div style={{ padding: "12px", border: `1.5px solid ${C.border}`, borderRadius: "10px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>
+                    Autopay
+                  </div>
+                  <div style={{ fontSize: "12px", color: C.textMid, marginTop: "2px" }}>
+                    Automatically decrement balance on due date
+                  </div>
+                </div>
+                
+                <label style={{ position: "relative", display: "inline-block", width: "42px", height: "24px" }}>
+                  <input
+                    type="checkbox"
+                    checked={newDebt.autopay}
+                    onChange={(e) => setNewDebt({ ...newDebt, autopay: e.target.checked })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{
+                    position: "absolute",
+                    cursor: "pointer",
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: newDebt.autopay ? C.blue : C.border,
+                    transition: ".4s",
+                    borderRadius: "24px",
+                  }}>
+                    <span style={{
+                      position: "absolute",
+                      content: '""',
+                      height: "18px",
+                      width: "18px",
+                      left: "3px",
+                      bottom: "3px",
+                      backgroundColor: "white",
+                      transition: ".4s",
+                      borderRadius: "50%",
+                      transform: newDebt.autopay ? "translateX(18px)" : "translateX(0)",
+                    }}></span>
+                  </span>
+                </label>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  background: C.surface,
-                  border: `1.5px solid ${C.border}`,
-                  borderRadius: "8px",
-                  padding: "0 12px",
-                  gap: "5px",
-                }}
-              >
-                <span style={{ color: C.textLight, fontWeight: 600 }}>$ min</span>
-                <input
-                  type="number"
-                  placeholder="Min Payment"
-                  step="0.01"
-                  value={newDebt.min}
-                  onChange={(e) => setNewDebt({ ...newDebt, min: e.target.value })}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: C.text,
-                    fontSize: "15px",
-                    padding: "10px 0",
-                    width: "100%",
-                    minWidth: 0,
-                  }}
-                  required
-                />
-              </div>
+              {newDebt.autopay && (
+                 <div>
+                   <div style={{ fontSize: "11px", fontWeight: 700, color: C.textLight, textTransform: "uppercase", marginBottom: "6px" }}>Due Date (Day 1-31)</div>
+                   <input
+                     type="number"
+                     min="1"
+                     max="31"
+                     placeholder="e.g. 15"
+                     value={newDebt.dueDay}
+                     onChange={(e) => setNewDebt({ ...newDebt, dueDay: e.target.value })}
+                     style={inputStyle}
+                     required
+                   />
+                 </div>
+              )}
             </div>
+
             <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
               <button
                 type="submit"
@@ -298,7 +442,7 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                     {debt.name}
                   </div>
                   <div style={{ fontSize: "13px", color: C.textLight }}>
-                    Est. Payoff: {debt.date ? new Date(debt.date).toLocaleDateString() : 'N/A'}
+                    Est. Payoff: {debt.payoffDate ? new Date(debt.payoffDate).toLocaleDateString() : (debt.date ? new Date(debt.date).toLocaleDateString() : 'N/A')}
                   </div>
                 </div>
                 <div style={{ fontSize: "18px", fontWeight: 800, color: C.text }}>
@@ -317,17 +461,51 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
                 </div>
               </div>
               
-              <div style={{ marginTop: "auto", borderTop: `1px solid ${C.borderLight || C.border}`, paddingTop: "12px", display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "12px", marginTop: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label style={{ position: "relative", display: "inline-block", width: "42px", height: "24px" }}>
+                    <input
+                      type="checkbox"
+                      checked={debt.autopay || false}
+                      onChange={() => onToggleAutopay && onToggleAutopay(debt.id)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: "absolute",
+                      cursor: "pointer",
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: debt.autopay ? C.blue : C.border,
+                      transition: ".4s",
+                      borderRadius: "24px",
+                    }}>
+                      <span style={{
+                        position: "absolute",
+                        content: '""',
+                        height: "18px",
+                        width: "18px",
+                        left: "3px",
+                        bottom: "3px",
+                        backgroundColor: "white",
+                        transition: ".4s",
+                        borderRadius: "50%",
+                        transform: debt.autopay ? "translateX(18px)" : "translateX(0)",
+                      }}></span>
+                    </span>
+                  </label>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: C.textLight }}>Autopay</span>
+                </div>
+                
                  <button
                    onClick={() => onDeleteDebt(debt.id)}
                    style={{
-                     background: "transparent",
-                     border: "none",
+                     background: C.surfaceAlt,
+                     border: `1.5px solid ${C.border}`,
+                     borderRadius: "8px",
                      color: C.red,
-                     fontSize: "13px",
-                     fontWeight: 600,
+                     fontSize: "12px",
+                     fontWeight: 700,
                      cursor: "pointer",
-                     padding: "4px",
+                     padding: "6px 10px",
                    }}
                  >
                    Delete
@@ -336,6 +514,14 @@ export default function DebtTab({ debts = [], onAddDebt, onDeleteDebt, formatCur
             </div>
           ))}
         </div>
+      )}
+
+      {showDashboard && (
+        <DebtDashboardModal
+          debts={debts}
+          formatCurrency={formatCurrency}
+          onClose={() => setShowDashboard(false)}
+        />
       )}
     </div>
   );
