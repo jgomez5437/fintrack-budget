@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { C } from "../constants";
+import IncomeUsedModal from "./IncomeUsedModal";
 
 export default function SummaryCards({
   onScrollToIncome,
@@ -24,7 +26,11 @@ export default function SummaryCards({
   hasWeeklySummary,
   transactions = [],
   getCategoryById,
+  spentByCategory = {},
+  categories = [],
 }) {
+  const [showIncomeUsedModal, setShowIncomeUsedModal] = useState(false);
+
   const neutralCardStyle = {
     background: C.surface,
     border: `1.5px solid ${C.border}`,
@@ -259,11 +265,13 @@ export default function SummaryCards({
       </div>
 
       <div
+        onClick={() => setShowIncomeUsedModal(true)}
         style={{
           ...neutralCardStyle,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          cursor: "pointer",
         }}
       >
         <span
@@ -558,6 +566,16 @@ export default function SummaryCards({
           </div>
         )}
       </div>
+
+      <IncomeUsedModal
+        isOpen={showIncomeUsedModal}
+        onClose={() => setShowIncomeUsedModal(false)}
+        spentByCategory={spentByCategory}
+        categories={categories}
+        totalIncome={income}
+        totalSpent={totalSpent}
+        formatCurrency={formatCurrency}
+      />
     </div>
   );
 }
