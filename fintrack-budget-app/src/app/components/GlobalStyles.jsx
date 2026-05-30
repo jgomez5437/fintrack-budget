@@ -150,6 +150,7 @@ export default function GlobalStyles() {
       
       @media (max-width: 768px) {
         .hide-chk-mobile { display: none !important; }
+        .hide-drag-mobile { display: none !important; }
         .show-btn-mobile { display: block !important; }
         .desktop-email-pill { display: none; }
         .tx-actions { opacity: 1 !important; }

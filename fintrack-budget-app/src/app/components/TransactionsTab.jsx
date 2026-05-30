@@ -128,6 +128,10 @@ export default function TransactionsTab({
       hasLongPressedRef.current = false;
       return;
     }
+    if (isSelectionMode) {
+      onToggleTransactionSelection(transaction.id);
+      return;
+    }
     openTransactionDetails(transaction);
   };
 

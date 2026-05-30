@@ -36,9 +36,23 @@ export default function BudgetTab({
   onReorderCategories,
   onReorderIncomeCategories,
   onViewTransactions,
+  selectedCategoryIds = [],
+  onToggleCategorySelection,
+  onToggleAllCategories,
+  onClearCategorySelections,
+  onDeleteSelectedCategories,
 }) {
   const activeEditCategory = categories.find((category) => category.id === editingId) || 
                              incomeCategories.find((ic) => ic.id === editingId);
+
+  const selectedCount = selectedCategoryIds.length;
+  const allSelected = categories.length > 0 && selectedCount === categories.length;
+
+  const [isMobileSelectionMode, setIsMobileSelectionMode] = useState(false);
+  const [isMoveMode, setIsMoveMode] = useState(false);
+  const isSelectionMode = isMobileSelectionMode || selectedCount > 0;
+
+  const longPressTimerRef = useRef(null);
 
   // ── Drag State ──
   const [dragIndex, setDragIndex] = useState(null);
@@ -435,6 +449,128 @@ export default function BudgetTab({
             userSelect: "none",
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              padding: "12px 14px",
+              background: C.surface,
+              borderBottom: `1px solid ${C.border}`,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", flex: 1 }}>
+              <label
+                className={!isSelectionMode ? "hide-chk-mobile" : ""}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  color: C.text,
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={onToggleAllCategories}
+                  className="modern-checkbox"
+                  style={{ cursor: "pointer" }}
+                />
+                Select All
+              </label>
+
+              {!isSelectionMode && (
+                <button
+                  className="show-btn-mobile"
+                  onClick={() => setIsMobileSelectionMode(true)}
+                  style={{
+                    background: "transparent",
+                    border: `1.5px solid ${C.border}`,
+                    color: C.textMid,
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    padding: "5px 11px",
+                    borderRadius: "999px",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Select Categories
+                </button>
+              )}
+
+              <span 
+                className={!isSelectionMode ? "hide-chk-mobile" : ""}
+                style={{ fontSize: "13px", color: C.textLight, fontWeight: 600 }}
+              >
+                {selectedCount > 0 ? `${selectedCount} selected` : ""}
+              </span>
+            </div>
+
+            {isSelectionMode && (
+              <button
+                className="show-btn-mobile"
+                onClick={() => {
+                  setIsMobileSelectionMode(false);
+                  if (onClearCategorySelections) onClearCategorySelections();
+                }}
+                style={{
+                  background: C.redLight,
+                  border: "none",
+                  color: C.red,
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  marginLeft: "auto",
+                }}
+              >
+                Cancel
+              </button>
+            )}
+
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => setIsMoveMode(!isMoveMode)}
+                style={{
+                  background: isMoveMode ? C.blue : C.surfaceAlt,
+                  border: "none",
+                  color: isMoveMode ? C.white : C.textMid,
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                }}
+              >
+                {isMoveMode ? "Done" : "Move"}
+              </button>
+
+              <button
+                onClick={onDeleteSelectedCategories}
+                disabled={selectedCount === 0}
+                style={{
+                  background: selectedCount === 0 ? C.surfaceAlt : C.red,
+                  border: "none",
+                  color: selectedCount === 0 ? C.textLight : C.white,
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  cursor: selectedCount === 0 ? "not-allowed" : "pointer",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
           {categories.map((category, index) => {
             const budget = parseFloat(category.amount) || 0;
             const spent = spentByCategory[category.id] || 0;
@@ -473,11 +609,42 @@ export default function BudgetTab({
               }
             }
 
+            const isSelected = selectedCategoryIds.includes(category.id);
+
             return (
               <div
                 key={category.id}
                 className="cat-row cat-drag-row"
-                onClick={() => { if (dragIndex === null) onStartEdit(category); }}
+                onClick={() => {
+                  if (isSelectionMode) {
+                    onToggleCategorySelection(category.id);
+                  } else if (dragIndex === null) {
+                    onStartEdit(category);
+                  }
+                }}
+                onTouchStart={() => {
+                  if (!isSelectionMode) {
+                    longPressTimerRef.current = setTimeout(() => {
+                      if (!selectedCategoryIds.includes(category.id)) {
+                        onToggleCategorySelection(category.id);
+                      }
+                      setIsMobileSelectionMode(true);
+                      longPressTimerRef.current = null;
+                    }, 400);
+                  }
+                }}
+                onTouchMove={() => {
+                  if (longPressTimerRef.current) {
+                    clearTimeout(longPressTimerRef.current);
+                    longPressTimerRef.current = null;
+                  }
+                }}
+                onTouchEnd={() => {
+                  if (longPressTimerRef.current) {
+                    clearTimeout(longPressTimerRef.current);
+                    longPressTimerRef.current = null;
+                  }
+                }}
                 style={{
                   padding: "14px 18px 14px 8px",
                   background: index % 2 === 0 ? C.surface : C.surfaceAlt,
@@ -494,8 +661,19 @@ export default function BudgetTab({
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <div className={!isSelectionMode ? "hide-chk-mobile" : ""} style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleCategorySelection(category.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="modern-checkbox"
+                      style={{ cursor: "pointer", margin: "0 4px" }}
+                    />
+                  </div>
                   {/* Drag handle */}
                   <div
+                    className={!isMoveMode ? "hide-drag-mobile" : ""}
                     style={{
                       flexShrink: 0,
                       color: C.textLight,
@@ -585,95 +763,6 @@ export default function BudgetTab({
                       >
                         ${formatCurrency(budget)}
                       </div>
-                      <button
-                        className="cat-view-btn"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (onViewTransactions) {
-                            onViewTransactions(category.id);
-                          }
-                        }}
-                        title={`View Activity for ${category.name}`}
-                        style={{
-                          flexShrink: 0,
-                          background: "transparent",
-                          border: "none",
-                          color: C.blue,
-                          width: "28px",
-                          height: "28px",
-                          borderRadius: "7px",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onDeleteCategory(category);
-                        }}
-                        title={`Delete ${category.name}`}
-                        aria-label={`Delete ${category.name}`}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: C.textLight,
-                          cursor: "pointer",
-                          padding: "4px 6px",
-                          borderRadius: "5px",
-                          transition: "color 0.15s",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M4 7H20"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M9 3H15"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M7 7L8 19C8.1 20.1 8.9 21 10 21H14C15.1 21 15.9 20.1 16 19L17 7"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M10 11V17"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M14 11V17"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </button>
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -683,11 +772,41 @@ export default function BudgetTab({
                           ${formatCurrency(spent)}
                         </span>
                       </span>
-                      <span style={{ fontSize: "12px", color: remainingColor, fontWeight: 700 }}>
-                        {remaining >= 0
-                          ? `$${formatCurrency(remaining)} left`
-                          : `$${formatCurrency(Math.abs(remaining))} over`}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{ fontSize: "12px", color: remainingColor, fontWeight: 700 }}>
+                          {remaining >= 0
+                            ? `$${formatCurrency(remaining)} left`
+                            : `$${formatCurrency(Math.abs(remaining))} over`}
+                        </span>
+                        <button
+                          className="cat-view-btn"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (onViewTransactions) {
+                              onViewTransactions(category.id);
+                            }
+                          }}
+                          title={`View Activity for ${category.name}`}
+                          style={{
+                            flexShrink: 0,
+                            background: "transparent",
+                            border: "none",
+                            color: C.blue,
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   </div>{/* end inner flex */}
