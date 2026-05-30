@@ -131,6 +131,7 @@ export default function BudgetApp() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [selectedTransactionIds, setSelectedTransactionIds] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [budgetLoaded, setBudgetLoaded] = useState(false);
   const [authCycleReady, setAuthCycleReady] = useState(false);
   const [shouldShowCategoryAlert, setShouldShowCategoryAlert] = useState(false);
@@ -1033,6 +1034,41 @@ export default function BudgetApp() {
     });
   };
 
+  const toggleCategorySelection = (categoryId) => {
+    setSelectedCategoryIds((currentIds) =>
+      currentIds.includes(categoryId)
+        ? currentIds.filter((id) => id !== categoryId)
+        : [...currentIds, categoryId],
+    );
+  };
+
+  const toggleAllCategories = () => {
+    setSelectedCategoryIds((currentIds) =>
+      currentIds.length === data.categories.length ? [] : data.categories.map((category) => category.id),
+    );
+  };
+
+  const deleteSelectedCategories = () => {
+    if (selectedCategoryIds.length === 0) return;
+
+    setPendingDelete({
+      type: "categories",
+      ids: selectedCategoryIds,
+      title:
+        selectedCategoryIds.length === 1
+          ? "Remove 1 selected category?"
+          : `Remove ${selectedCategoryIds.length} selected categories?`,
+      description:
+        selectedCategoryIds.length === 1
+          ? "This will remove the selected category and delete all transactions assigned to it."
+          : "This will remove all selected categories and delete all transactions assigned to them.",
+      confirmLabel:
+        selectedCategoryIds.length === 1
+          ? "Delete selected category"
+          : `Delete ${selectedCategoryIds.length} categories`,
+    });
+  };
+
   const updateTransactionCategory = (transactionId, categoryId, splitData = null) => {
     const isSplit = !!(splitData && splitData.isSplit);
     const targetTransaction = transactions.find(t => t.id === transactionId);
@@ -1209,6 +1245,18 @@ export default function BudgetApp() {
         ),
       });
       setSelectedTransactionIds([]);
+    }
+
+    if (pendingDelete.type === "categories") {
+      const idsToDelete = new Set(pendingDelete.ids);
+      update({
+        ...data,
+        categories: data.categories.filter((category) => !idsToDelete.has(category.id)),
+        transactions: transactions.filter(
+          (transaction) => !idsToDelete.has(transaction.categoryId),
+        ),
+      });
+      setSelectedCategoryIds([]);
     }
 
     setPendingDelete(null);
@@ -1617,6 +1665,11 @@ export default function BudgetApp() {
     uncategorizedSaveSuccess,
     selectedTransactionIds,
     setSelectedTransactionIds,
+    selectedCategoryIds,
+    setSelectedCategoryIds,
+    toggleCategorySelection,
+    toggleAllCategories,
+    deleteSelectedCategories,
     importError,
     isImportDragActive,
     mostRecentImportedTransactionLabel,

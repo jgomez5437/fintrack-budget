@@ -65,6 +65,11 @@ export default function Budget() {
       onReorderIncomeCategories={(reordered) => {
         context.setData((prev) => ({ ...prev, incomeCategories: reordered }));
       }}
+      selectedCategoryIds={context.selectedCategoryIds}
+      onToggleCategorySelection={context.toggleCategorySelection}
+      onToggleAllCategories={context.toggleAllCategories}
+      onClearCategorySelections={() => context.setSelectedCategoryIds([])}
+      onDeleteSelectedCategories={context.deleteSelectedCategories}
     />
       {viewingCatId && viewingCategory && (
         <CategoryTransactionsModal
