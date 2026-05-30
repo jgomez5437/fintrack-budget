@@ -28,7 +28,11 @@ export default function AddIncomeModal({
         zIndex: 30,
       }}
     >
-      <div
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onConfirm();
+        }}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
@@ -121,7 +125,7 @@ export default function AddIncomeModal({
 
         <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
           <button
-            onClick={onConfirm}
+            type="submit"
             style={{
               border: "none",
               borderRadius: "16px",
@@ -137,6 +141,7 @@ export default function AddIncomeModal({
           </button>
 
           <button
+            type="button"
             onClick={onCancel}
             style={{
               border: `1.5px solid ${C.border}`,
@@ -152,7 +157,7 @@ export default function AddIncomeModal({
             Cancel
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
