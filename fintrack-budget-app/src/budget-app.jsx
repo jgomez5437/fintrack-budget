@@ -322,6 +322,7 @@ export default function BudgetApp() {
 
   useEffect(() => {
     if (authLoading || !session) return;
+    if (firstName) return;
 
     let isMounted = true;
     async function loadFirstName() {
@@ -341,7 +342,7 @@ export default function BudgetApp() {
     }
     loadFirstName();
     return () => { isMounted = false; };
-  }, [authLoading, session, storage]);
+  }, [authLoading, session, storage, firstName]);
 
   // ── Weekly AI Summary — generate once on Sunday login ──────────────────────
   useEffect(() => {
@@ -782,11 +783,23 @@ export default function BudgetApp() {
   const saveEdit = (id) => {
     if (!editVal.name.trim() || !editVal.amount) return;
 
+    let updatedCategories = data.categories;
+    let updatedIncomeCategories = data.incomeCategories || [];
+
+    if (data.categories.some((c) => c.id === id)) {
+      updatedCategories = data.categories.map((category) =>
+        category.id === id ? { ...category, ...editVal } : category,
+      );
+    } else if (updatedIncomeCategories.some((c) => c.id === id)) {
+      updatedIncomeCategories = updatedIncomeCategories.map((category) =>
+        category.id === id ? { ...category, ...editVal } : category,
+      );
+    }
+
     update({
       ...data,
-      categories: data.categories.map((category) =>
-        category.id === id ? { ...category, ...editVal } : category,
-      ),
+      categories: updatedCategories,
+      incomeCategories: updatedIncomeCategories,
     });
     setEditingId(null);
   };
