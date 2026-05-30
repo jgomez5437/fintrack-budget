@@ -35,6 +35,7 @@ export default function BudgetTab({
   onOpenAddIncome,
   onReorderCategories,
   onReorderIncomeCategories,
+  onViewTransactions,
 }) {
   const activeEditCategory = categories.find((category) => category.id === editingId) || 
                              incomeCategories.find((ic) => ic.id === editingId);
@@ -585,35 +586,32 @@ export default function BudgetTab({
                         ${formatCurrency(budget)}
                       </div>
                       <button
-                        className="cat-add-btn"
+                        className="cat-view-btn"
                         onClick={(event) => {
                           event.stopPropagation();
-                          inlineCatId === category.id
-                            ? onCloseInline()
-                            : onOpenInline(category.id);
+                          if (onViewTransactions) {
+                            onViewTransactions(category.id);
+                          }
                         }}
-                        title={`Add to ${category.name}`}
+                        title={`View Activity for ${category.name}`}
                         style={{
                           flexShrink: 0,
-                          background:
-                            inlineCatId === category.id ? C.gold : C.goldLight,
-                          border: `1.5px solid ${
-                            inlineCatId === category.id ? C.gold : "#f5d68a"
-                          }`,
-                          color: inlineCatId === category.id ? C.white : C.goldDark,
+                          background: "transparent",
+                          border: "none",
+                          color: C.blue,
                           width: "28px",
                           height: "28px",
                           borderRadius: "7px",
                           cursor: "pointer",
-                          fontSize: "18px",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          lineHeight: 1,
                           transition: "all 0.15s",
                         }}
                       >
-                        {inlineCatId === category.id ? "x" : "+"}
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        </svg>
                       </button>
                       <button
                         onClick={(event) => {

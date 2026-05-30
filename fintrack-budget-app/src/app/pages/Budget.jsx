@@ -1,12 +1,20 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import BudgetTab from "../components/BudgetTab";
+import CategoryTransactionsModal from "../components/CategoryTransactionsModal";
 
 export default function Budget() {
   const context = useOutletContext();
+  const [viewingCatId, setViewingCatId] = useState(null);
+  
+  const viewingCategory = viewingCatId ? context.getCategoryById(viewingCatId) : null;
+  const categoryTransactions = viewingCatId ? context.transactions.filter(t => t.categoryId === viewingCatId || (t.isSplit && t.splits && t.splits.some(s => s.categoryId === viewingCatId))) : [];
   
   return (
-    <BudgetTab
-      incomeSectionRef={context.incomeSectionRef}
+    <>
+      <BudgetTab
+        onViewTransactions={setViewingCatId}
+        incomeSectionRef={context.incomeSectionRef}
       incomeCategories={context.incomeCategories}
       earnedByCategory={context.earnedByCategory}
       onAddIncomeCategory={context.addIncomeCategory}
@@ -58,5 +66,14 @@ export default function Budget() {
         context.setData((prev) => ({ ...prev, incomeCategories: reordered }));
       }}
     />
+      {viewingCatId && viewingCategory && (
+        <CategoryTransactionsModal
+          category={viewingCategory}
+          transactions={categoryTransactions}
+          formatCurrency={context.formatCurrency}
+          onClose={() => setViewingCatId(null)}
+        />
+      )}
+    </>
   );
 }
