@@ -31,7 +31,11 @@ export default function CategoryEditModal({
         zIndex: 35,
       }}
     >
-      <div
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
         onClick={(event) => event.stopPropagation()}
         style={{
           width: "100%",
@@ -103,7 +107,7 @@ export default function CategoryEditModal({
 
         <div style={{ display: "grid", gap: "12px", marginTop: "22px" }}>
           <button
-            onClick={onSave}
+            type="submit"
             style={{
               border: "none",
               borderRadius: "16px",
@@ -119,6 +123,7 @@ export default function CategoryEditModal({
           </button>
 
           <button
+            type="button"
             onClick={onCancel}
             style={{
               border: `1.5px solid ${C.border}`,
@@ -134,7 +139,7 @@ export default function CategoryEditModal({
             Cancel
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 
