@@ -1,18 +1,42 @@
 const PERSONAL_IMPORT_CATEGORY_RULES = [
-  ["Us Mobile Www.usmobile.", "Phone Bill"],
-  ["Dd *doordashdashpa Doordash", "Subscriptions"],
-  ["Shs*tucsonmedical Tucson", "TMC"],
+  ["Us Mobile", "Phone Bill"],
+  ["doordashdashpa", "Subscriptions"],
+  ["tucsonmedical", "TMC"],
   ["Usconnect Tmdra", "Groceries"],
   ["Mister Car Wash", "Subscriptions"],
-  ["Trader Joe S", "Groceries"],
-  ["Innago Llc Innago", "Rent"],
-  ["Google *ascension", "Subscriptions"],
-  ["American Strateg Ach", "Renters Insurance"],
-  ["Disney Plus Wilmington", "Subscriptions"],
-  ["Prog Advanced Ins", "Car Insurance"],
-  ["Makanstudio Nepean Can", "Subscriptions"],
-  ["Spotify P3ff4f0c32 New", "Spotify"],
+  ["Trader Joe", "Groceries"],
+  ["Innago", "Rent"],
+  ["ascension", "Subscriptions"],
+  ["google one", "Subscriptions"],
+  ["American Strateg", "Renters Insurance"],
+  ["Prog Advanced", "Car Insurance"],
+  ["Makanstudio", "Subscriptions"],
   ["Tep Corporate", "Electric"],
+  
+  // Specific subscriptions
+  ["Blink", "Subscriptions"],
+  ["Disney", "Subscriptions"],
+  ["Prime", "Subscriptions"],
+  ["Spotify", "Subscriptions"],
+  ["Nintendo", "Subscriptions"],
+  
+  // Mapped categories from transaction list
+  ["Freddy", "Fast Food"],
+  ["Jersey Mike", "Fast Food"],
+  ["Albertson", "Groceries"],
+  ["TruWest", "Car Payment"],
+  ["Chick Fil A", "Fast Food"],
+  ["Sofi Bank", "SoFi CC"],
+  ["Sofi", "SoFi CC"],
+  ["Chase", "Credit Card Payments"],
+  ["Raising Canes", "Fast Food"],
+  ["Prestige Vending", "Groceries"],
+  ["Oahu", "Fast Food"],
+  ["Ops barcelona", "Laundry"],
+  ["doordash", "Fast Food"],
+  ["Frys", "Groceries"],
+  ["Starbucks", "Fast Food"],
+  ["McDonald", "Fast Food"],
 ];
 
 function normalizeMerchantValue(value) {
@@ -37,6 +61,17 @@ export function autoAssignImportCategory(rows, categories, recurring = []) {
     const normalizedRaw = normalizeMerchantValue(row.rawDesc);
     const normalizedName = normalizeMerchantValue(row.name);
     
+    // Special rule for gas stations (amount >= 20)
+    const isGasStation = ["circle k", "qt", "quiktrip"].some(
+      (gas) => normalizedRaw.includes(gas) || normalizedName.includes(gas)
+    );
+    if (isGasStation && Math.abs(row.amount) >= 20) {
+      const gasCategoryId = categoriesByName.get("gas");
+      if (gasCategoryId) {
+        return { ...row, categoryId: gasCategoryId };
+      }
+    }
+
     // First check against hard-coded rules
     const matchedRule = normalizedRules.find(
       (rule) =>

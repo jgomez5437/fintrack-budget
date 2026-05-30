@@ -95,13 +95,31 @@ export function parseImportFile(file) {
           defval: "",
         });
 
+        let dateIdx = 0;
+        let amountIdx = 1;
+        let descIdx = 4;
+        
+        if (rows.length > 0) {
+          const header = rows[0].map(h => String(h).toLowerCase().trim());
+          const foundDate = header.findIndex(h => h.includes('date'));
+          const foundAmount = header.findIndex(h => h.includes('amount'));
+          const foundDesc = header.findIndex(h => h.includes('description') || h.includes('name') || h.includes('payee') || h.includes('merchant'));
+          
+          if (foundAmount !== -1 && foundDesc !== -1) {
+            dateIdx = foundDate !== -1 ? foundDate : 0;
+            amountIdx = foundAmount;
+            descIdx = foundDesc;
+          }
+        }
+
         const parsedRows = [];
         for (const row of rows) {
-          const rawDate = row[0];
-          const rawAmount = row[1];
-          const rawDesc = row[4];
+          const rawDate = row[dateIdx];
+          const rawAmount = row[amountIdx];
+          const rawDesc = row[descIdx];
 
           if (rawDesc === "" && rawAmount === "") continue;
+          if (String(rawAmount).toLowerCase().trim() === 'amount') continue;
 
           const amount = parseFloat(String(rawAmount).replace(/[^0-9.\-]/g, ""));
           if (Number.isNaN(amount) || amount === 0) continue;
