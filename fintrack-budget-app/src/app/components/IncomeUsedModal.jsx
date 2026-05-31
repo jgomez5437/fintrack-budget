@@ -74,6 +74,8 @@ export default function IncomeUsedModal({
     ? `conic-gradient(${gradientStops.join(", ")})` 
     : `conic-gradient(${C.surfaceAlt} 0% 100%)`;
 
+  const spendPct = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
+
   return createPortal(
     <div
       style={{
@@ -129,16 +131,38 @@ export default function IncomeUsedModal({
         <div style={{ padding: "24px", display: "flex", flexDirection: "column", alignItems: "center", overflowY: "auto", flex: 1 }}>
           <div
             style={{
-              width: "200px",
-              height: "200px",
+              width: "220px",
+              height: "220px",
               borderRadius: "50%",
               background: conicGradient,
-              marginBottom: "24px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              border: `2px solid ${C.surface}`,
+              marginBottom: "32px",
+              marginTop: "16px",
+              boxShadow: "0 16px 32px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08)",
+              border: `6px solid ${C.surface}`,
               flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
             }}
-          />
+          >
+            <div
+              style={{
+                width: "130px",
+                height: "130px",
+                borderRadius: "50%",
+                background: C.surface,
+                boxShadow: "inset 0 8px 16px rgba(0,0,0,0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <div style={{ fontSize: "12px", color: C.textLight, fontWeight: 700, letterSpacing: "1px", marginBottom: "4px" }}>SPENT</div>
+              <div style={{ fontSize: "18px", color: C.text, fontWeight: 800 }}>{spendPct > 0 ? `${spendPct.toFixed(0)}%` : "0%"}</div>
+            </div>
+          </div>
 
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
             {items.map((item, i) => (
